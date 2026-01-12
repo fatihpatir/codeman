@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Codeman Parkur | PWA Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="game-container">
+        <div id="ui-layer">
+            <div id="header">
+                <span class="terminal-text">codeman@parkur:~$</span>
+                <div id="score-container">
+                    <span id="score-label">LOC: <span id="score">0</span></span>
+                    <span id="bits-label">BITS: <span id="bits">0</span></span>
+                </div>
+            </div>
+            <div id="status">STATUS: RUNNING...</div>
+        </div>
+
+        <div id="customizer" class="hidden">
+            <h3>SELECT SKIN</h3>
+            <div class="color-options">
+                <div class="color-opt active" data-color="#58a6ff" style="background: #58a6ff;"></div>
+                <div class="color-opt" data-color="#238636" style="background: #238636;"></div>
+                <div class="color-opt" data-color="#f85149" style="background: #f85149;"></div>
+                <div class="color-opt" data-color="#bc8cff" style="background: #bc8cff;"></div>
+                <div class="color-opt" data-color="#f2e05c" style="background: #f2e05c;"></div>
+            </div>
+            <button id="btn-close-custom">APPLY</button>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+        <div id="controls">
+            <div id="joystick-container">
+                <div id="joystick-base">
+                    <div id="joystick-stick"></div>
+                </div>
+            </div>
+            <div id="action-buttons">
+                <button id="btn-shoot" class="control-btn action-btn">ATEŞ</button>
+                <button id="btn-jump" class="control-btn">ZIPLA</button>
+            </div>
+        </div>
+
+        <!-- PWA Install Prompt -->
+        <div id="pwa-toast" class="hidden">
+            <p>Uygulamayı ana ekrana ekle!</p>
+            <button id="btn-pwa">YÜKLE</button>
+        </div>
+
+        <div id="overlay" class="hidden">
+            <div class="modal">
+                <h1 class="glitch" data-text="GAME OVER">GAME OVER</h1>
+                <p id="final-score">Total LOC: 0</p>
+                <div class="menu-btns">
+                    <button id="btn-restart">RE-COMPILE</button>
+                    <button id="btn-shop">BYTE SHOP</button>
+                    <button id="btn-customize">CUSTOMIZE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop" class="hidden">
+            <div class="modal">
+                <h2>BYTE SHOP</h2>
+                <p>Balance: <span id="shop-bits">0</span> BITS</p>
+                <div class="shop-grid">
+                    <div class="shop-item" data-id="shield" data-price="50">
+                        <div class="item-icon">🛡️</div>
+                        <div class="item-info">
+                            <span>SHIELD</span>
+                            <small>50 BITS</small>
+                        </div>
+                    </div>
+                    <div class="shop-item" data-id="jetpack" data-price="150">
+                        <div class="item-icon">🚀</div>
+                        <div class="item-info">
+                            <span>JETPACK</span>
+                            <small>150 BITS</small>
+                        </div>
+                    </div>
+                    <div class="shop-item" data-id="triple" data-price="100">
+                        <div class="item-icon">🔫</div>
+                        <div class="item-info">
+                            <span>TRIPLE SHOT</span>
+                            <small>100 BITS</small>
+                        </div>
+                    </div>
+                </div>
+                <button id="btn-close-shop">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+
+</html>
