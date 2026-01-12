@@ -12,7 +12,20 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    /* Disable long-press menu */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
     user-select: none;
+    /* Non-prefixed version, currently supported by Chrome and Opera */
+    touch-action: none;
+    /* Disable panning, zooming, etc. */
 }
 
 body {
@@ -22,6 +35,8 @@ body {
     overflow: hidden;
     height: 100vh;
     width: 100vw;
+    position: fixed;
+    /* Prevent pull-to-refresh */
 }
 
 #game-container {
@@ -78,7 +93,44 @@ body {
     margin-top: 5px;
     font-size: 0.8rem;
     opacity: 0.7;
-    animation: blink 1s step-end infinite;
+    animation: blink 1s step-index infinite;
+}
+
+#top-controls {
+    position: absolute;
+    top: 60px;
+    right: 0;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.icon-btn {
+    width: 45px;
+    height: 45px;
+    background: rgba(22, 27, 34, 0.6);
+    border: 1.5px solid var(--accent-blue);
+    color: var(--accent-blue);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.icon-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+    transform: scale(1.05);
+}
+
+.icon-btn:active {
+    transform: scale(0.95);
 }
 
 @keyframes blink {
@@ -110,27 +162,39 @@ body {
 }
 
 #joystick-base {
-    width: 120px;
-    height: 120px;
-    background: rgba(22, 27, 34, 0.2);
-    border: 2px solid rgba(88, 166, 255, 0.15);
+    width: 140px;
+    height: 140px;
+    background: rgba(22, 27, 34, 0.4);
+    border: 2px solid rgba(88, 166, 255, 0.3);
     border-radius: 50%;
     position: relative;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(5px);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5), 0 0 15px rgba(88, 166, 255, 0.1);
 }
 
 #joystick-stick {
-    width: 50px;
-    height: 50px;
-    background: var(--accent-blue);
-    opacity: 0.5;
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle at 30% 30%, var(--accent-blue), #0d47a1);
     border-radius: 50%;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
-    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5), 0 0 20px rgba(88, 166, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#joystick-stick::after {
+    content: '';
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Action Buttons Container */
