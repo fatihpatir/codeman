@@ -41,25 +41,43 @@ body {
 
 /* Removed Dynamic Island CSS */
 
+#joystick-base {
+    width: 110px;
+    height: 110px;
+    background: rgba(88, 166, 255, 0.05);
+    border: 1.5px solid rgba(88, 166, 255, 0.3);
+    border-radius: 50%;
+    position: relative;
+    backdrop-filter: blur(5px);
+}
+
+#joystick-stick {
+    width: 44px;
+    height: 44px;
+    background: radial-gradient(circle at 30% 30%, rgba(88, 166, 255, 0.6), rgba(0, 0, 0, 0.6));
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Control Panel */
 #controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 180px;
-    /* Take enough height but keep bottom anchored */
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    padding-left: calc(15px + env(safe-area-inset-left));
-    padding-right: calc(15px + env(safe-area-inset-right));
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
+    position: fixed;
+    inset: 0;
     pointer-events: none;
     z-index: 1500;
 }
 
 #joystick-container {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    /* Safe Area Support */
+    bottom: calc(15px + env(safe-area-inset-bottom));
+    left: calc(15px + env(safe-area-inset-left));
     pointer-events: auto;
     width: 150px;
     height: 150px;
@@ -91,13 +109,14 @@ body {
 }
 
 #system-controls {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(15px + env(safe-area-inset-bottom));
     display: flex;
     gap: 15px;
     pointer-events: auto;
-    position: absolute;
-    bottom: 0px;
-    left: 50%;
-    transform: translateX(-50%);
 }
 
 .icon-btn {
@@ -122,10 +141,14 @@ body {
 }
 
 #action-buttons {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    bottom: calc(15px + env(safe-area-inset-bottom));
+    right: calc(15px + env(safe-area-inset-right));
     display: flex;
     gap: 15px;
     pointer-events: auto;
-    padding-bottom: 10px;
 }
 
 .control-btn {
