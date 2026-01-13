@@ -1277,7 +1277,7 @@ const updateJoystick = (e) => {
     let diffY = touch.clientY - joystickCenter.y;
 
     const dist = Math.sqrt(diffX * diffX + diffY * diffY);
-    const maxDist = 45; // Updated to match new size (90px base / 2)
+    const maxDist = 60; // Updated for 120px base (120/2)
 
     if (dist > maxDist) {
         diffX *= maxDist / dist;
