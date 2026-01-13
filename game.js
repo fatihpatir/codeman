@@ -30,10 +30,11 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
         return this;
     };
 }
-// --- GLOBALS ---
-let scoreElement, bitsElement, finalScoreElement, overlay, restartBtn;
-let joystickBase, joystickStick, shootBtn, jumpBtn;
-let island, islandText, islandTimeout;
+// --- GLOBALS (Using var to avoid TDZ on legacy iOS) ---
+var scoreElement, bitsElement, finalScoreElement, overlay, restartBtn;
+var joystickBase, joystickStick, shootBtn, jumpBtn;
+var island, islandText, islandTimeout;
+console.log("Sistem Versiyonu: 2.1.2 (iOS Bugfix)");
 
 function updateIsland(text, type = 'normal') {
     if (!island) island = document.getElementById('dynamic-island');

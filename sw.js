@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parkur-v2';
+const CACHE_NAME = 'parkur-v3';
 const ASSETS = [
     './',
     './index.html',
@@ -18,7 +18,17 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim());
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => clients.claim())
+    );
 });
 
 self.addEventListener('fetch', (event) => {
