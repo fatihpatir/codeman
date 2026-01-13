@@ -2,16 +2,22 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 window.onerror = function (msg, url, line) {
-    // Only alert for non-local testing if needed, or just log
     console.error("DEBUG ERROR: ", msg, " at ", line);
+    // On mobile, sometimes console log is hidden, so alert for critical errors
+    if (!url.includes('google') && !url.includes('analytics')) {
+        alert("SİSTEM HATASI: " + msg + "\nSatır: " + line);
+    }
 };
 
 // --- POLYFILLS ---
 if (!CanvasRenderingContext2D.prototype.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
+        if (typeof radius === 'undefined') radius = 0;
         if (typeof radius === 'number') radius = { tl: radius, tr: radius, br: radius, bl: radius };
         else radius = { ...{ tl: 0, tr: 0, br: 0, bl: 0 }, ...radius };
-        this.beginPath();
+
+        // Non-destructive: DO NOT call beginPath() or closePath() here
+        // as standard roundRect doesn't. It just adds to current path.
         this.moveTo(x + radius.tl, y);
         this.lineTo(x + width - radius.tr, y);
         this.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
@@ -21,7 +27,6 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
         this.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
         this.lineTo(x, y + radius.tl);
         this.quadraticCurveTo(x, y, x + radius.tl, y);
-        this.closePath();
         return this;
     };
 }
@@ -92,7 +97,8 @@ const keys = {};
 const bgImg = new Image();
 bgImg.src = 'motherboard_bg.png';
 let bgLoaded = false;
-bgImg.onload = () => { bgLoaded = true; };
+bgImg.onload = () => { bgLoaded = true; console.log("Arka plan yüklendi."); };
+bgImg.onerror = () => { console.error("Arka plan yüklenemedi: motherboard_bg.png"); bgLoaded = false; };
 
 function drawParallaxBackground() {
     if (!bgLoaded) {
@@ -1379,7 +1385,7 @@ const playSound = (t) => {
     }
 };
 
-function gameOver() { isGameOver = true; playSound('hit'); overlay.classList.remove('hidden'); }
+// gameOver defined later
 
 // --- INPUT HANDLING ---
 
@@ -1410,6 +1416,7 @@ const updateJoystick = (e) => {
 };
 
 const startJoystick = (e) => {
+    initAudio(); // Unlock audio on first touch
     const touch = e.touches ? e.touches[0] : e;
     const rect = joystickBase.getBoundingClientRect();
 
@@ -1571,6 +1578,7 @@ settingsFixedBtn.addEventListener('click', () => {
 });
 
 document.getElementById('btn-restart').addEventListener('click', () => {
+    initAudio();
     overlay.classList.add('hidden');
     initLevel();
     animationId = requestAnimationFrame(gameLoop);
@@ -1658,5 +1666,9 @@ function startGame() {
     requestAnimationFrame(gameLoop);
 }
 
-// Start everything when the window loads
-window.onload = startGame;
+// Start everything when the window loads or immediately if already loaded
+if (document.readyState === 'complete') {
+    startGame();
+} else {
+    window.addEventListener('load', startGame);
+}
