@@ -15,6 +15,11 @@
 
 <body>
     <div id="game-container">
+        <div id="dynamic-island-container">
+            <div id="dynamic-island">
+                <span id="island-text">DURUM: ÇALIŞIYOR...</span>
+            </div>
+        </div>
         <div id="ui-layer">
             <div id="header">
                 <div id="lives-container">❤️❤️❤️</div>
@@ -25,13 +30,7 @@
                 </div>
             </div>
             <div id="status">DURUM: ÇALIŞIYOR...</div>
-            <div id="top-controls">
-                <div class="top-row">
-                    <button id="btn-info" class="icon-btn">ℹ️</button>
-                    <button id="btn-pause" class="icon-btn">⏸</button>
-                    <button id="btn-settings-fixed" class="icon-btn">⚙️</button>
-                </div>
-            </div>
+
         </div>
 
         <!-- Info Modal -->
@@ -87,6 +86,13 @@
                     <div id="joystick-stick"></div>
                 </div>
             </div>
+
+            <div id="system-controls">
+                <button id="btn-info" class="icon-btn">ℹ️</button>
+                <button id="btn-pause" class="icon-btn">⏸</button>
+                <button id="btn-settings-fixed" class="icon-btn">⚙️</button>
+            </div>
+
             <div id="action-buttons">
                 <button id="btn-shoot" class="control-btn action-btn">
                     <span class="btn-icon">☄️</span>

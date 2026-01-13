@@ -11,12 +11,14 @@ const joystickStick = document.getElementById('joystick-stick');
 const shootBtn = document.getElementById('btn-shoot');
 const jumpBtn = document.getElementById('btn-jump');
 
-// --- CONSTANTS (Sharper Physics) ---
-const GRAVITY = 0.7; // Slightly lighter gravity
-const FRICTION = 0.88; // Slightly more friction for better stopping
-const JUMP_FORCE = -14; // Adjusted for new gravity
-const ACCELERATION = 0.8; // Reduced from 1.2
-const MAX_SPEED = 7; // Reduced from 10
+// --- CONSTANTS (Slower, Managed Physics) ---
+const GRAVITY = 0.4;
+const FRICTION = 0.8;
+const JUMP_FORCE = -10;
+const ACCELERATION = 0.5;
+const MAX_SPEED = 4.5;
+const TARGET_FPS = 60;
+const TIME_STEP = 1000 / TARGET_FPS;
 
 // --- CINEMATIC THEME ---
 const THEME = {
@@ -29,7 +31,7 @@ const THEME = {
     metal: '#8b949e'
 };
 
-let groundY = window.innerHeight * 0.75;
+let groundY = window.innerHeight * 0.85; // Lower ground for better visibility
 
 let isGameOver = false;
 let isPaused = false;
@@ -42,6 +44,7 @@ let collectibles = [];
 let projectiles = [];
 let particles = [];
 let animationId;
+let lastTimestamp = 0;
 let currentRankIndex = 0;
 const RANKS = [
     { score: 0, title: 'STAJYER', color: '#8b949e' },
@@ -98,7 +101,7 @@ function drawParallaxBackground() {
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    groundY = canvas.height * 0.75;
+    groundY = canvas.height * 0.85;
 
     // Check Orientation (Force Landscape)
     const warning = document.getElementById('orientation-warning');
@@ -120,7 +123,7 @@ class Player {
     constructor() { this.reset(); }
     reset() {
         this.width = 30; this.height = 45;
-        this.x = 200; this.y = canvas.height * 0.7;
+        this.x = 200; this.y = groundY - this.height - 100;
         this.vx = 0; this.vy = 0;
         this.onGround = false; this.doubleJumpAvailable = true;
         this.facing = 1; this.shootCooldown = 0;
@@ -319,7 +322,7 @@ class Player {
         ctx.restore(); // Restore Squash/Stretch
         ctx.restore(); // Restore Main
     }
-    update() {
+    update(dt) {
         if (this.invulnerable > 0) this.invulnerable--;
         if (this.shootCooldown > 0) this.shootCooldown--;
 
@@ -340,21 +343,21 @@ class Player {
 
         // Horizontal Movement logic
         if (Math.abs(moveX) > 0.1) {
-            this.vx += moveX * ACCELERATION;
+            this.vx += moveX * ACCELERATION * dt;
             const currentMaxSpeed = MAX_SPEED * Math.abs(moveX);
             if (Math.abs(this.vx) > currentMaxSpeed) this.vx *= 0.95;
             this.facing = moveX > 0 ? 1 : -1;
         } else {
-            this.vx *= FRICTION;
+            this.vx *= Math.pow(FRICTION, dt);
         }
 
         // Vertical Movement (Ducking / Looking Up)
         this.ducking = moveY > 0.5;
         this.lookingUp = moveY < -0.5;
 
-        this.vy += GRAVITY;
-        this.x += this.vx;
-        this.y += this.vy;
+        this.vy += GRAVITY * dt;
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
 
         this.onGround = false;
 
@@ -441,10 +444,10 @@ class Projectile {
         ctx.fillRect(0, -1.5, 15, 3);
         ctx.restore();
     }
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.l--;
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.l -= dt;
     }
 }
 
@@ -664,8 +667,8 @@ class Enemy {
         }
     }
 
-    update() {
-        this.x += this.vx;
+    update(dt) {
+        this.x += this.vx * dt;
         if (this.type === 'flyer') {
             this.y = this.baseY + Math.sin(Date.now() / 200 + this.seed) * 35;
         }
@@ -797,11 +800,11 @@ class Particle {
         this.life = 1.0;
         this.decay = Math.random() * 0.05 + 0.02;
     }
-    update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life -= this.decay;
-        this.size *= 0.95; // Shrink over time
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.life -= this.decay * dt;
+        this.size *= Math.pow(0.95, dt); // Shrink over time
     }
     draw() {
         if (this.life <= 0) return;
@@ -902,6 +905,38 @@ class Collectible {
 }
 
 
+// --- DYNAMIC ISLAND (iPhone 17+ Aesthetic) ---
+const island = document.getElementById('dynamic-island');
+const islandText = document.getElementById('island-text');
+let islandTimeout;
+
+function updateIsland(text, type = 'normal') {
+    if (!island || !islandText) return;
+
+    clearTimeout(islandTimeout);
+
+    // Reset classes
+    island.className = '';
+    if (type === 'rank-up') island.classList.add('rank-up', 'expanding');
+    else if (type === 'important') island.classList.add('expanding');
+
+    islandText.innerText = text;
+
+    // Pulse animation
+    island.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+        island.style.transform = 'scale(1)';
+    }, 200);
+
+    // Auto-shrink after 3 seconds if it was an important/rank-up message
+    if (type !== 'normal') {
+        islandTimeout = setTimeout(() => {
+            island.className = '';
+            islandText.innerText = isPaused ? 'DURUM: DURAKLADI' : 'DURUM: ÇALIŞIYOR...';
+        }, 3000);
+    }
+}
+
 // --- UI & PROGRESSION ---
 function updateUI() {
     // Score
@@ -927,6 +962,7 @@ function updateUI() {
 
     if (newRankIndex > currentRankIndex) {
         currentRankIndex = newRankIndex;
+        updateIsland(`TERFİ: ${RANKS[currentRankIndex].title}!`, 'rank-up');
         showRankUp(RANKS[currentRankIndex]);
     }
 
@@ -1008,6 +1044,7 @@ function drawWorld() {
 
 // --- LEVEL INITIALIZATION ---
 function initLevel() {
+    isGameOver = false; isPaused = false; cameraX = 0; distanceTraveled = 0; bitsCollected = 0;
     platforms = [];
     enemies = [];
     collectibles = [];
@@ -1015,9 +1052,13 @@ function initLevel() {
     particles = [];
 
     // Create initial platforms
-    platforms.push(new Platform(0, groundY - 100, 300, 20, 'ram'));
-    platforms.push(new Platform(400, groundY - 150, 250, 20, 'resistor'));
-    platforms.push(new Platform(750, groundY - 200, 280, 20, 'capacitor'));
+    platforms.push(new Platform(0, groundY - 100, 400, 20, 'ram'));
+    platforms.push(new Platform(500, groundY - 150, 250, 20, 'resistor'));
+    platforms.push(new Platform(850, groundY - 200, 280, 20, 'capacitor'));
+
+    player.reset();
+    lastTimestamp = 0;
+    requestAnimationFrame(gameLoop);
 }
 
 function generate() {
@@ -1055,87 +1096,93 @@ function generate() {
 
 
 
-function gameLoop() {
-    if (!isGameOver && !isPaused) {
-        drawWorld();
-        generate();
+function gameLoop(timestamp) {
+    if (isPaused || isGameOver) return;
 
-        particles = particles.filter(p => {
-            p.update();
-            p.draw();
-            return p.life > 0;
-        });
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const deltaTime = timestamp - lastTimestamp;
+    lastTimestamp = timestamp;
 
-        platforms.forEach(p => p.draw());
-        projectiles = projectiles.filter(p => { p.update(); p.draw(); return p.l > 0; });
+    // Cap deltaTime to avoid huge jumps
+    const dt = Math.min(deltaTime, 32) / TIME_STEP;
 
-        enemies = enemies.filter(en => {
-            en.update();
-            en.draw();
+    drawWorld();
+    generate();
 
-            if (!player) return true;
+    particles = particles.filter(p => {
+        p.update(dt);
+        p.draw();
+        return p.life > 0;
+    });
 
-            const hitX = Math.abs((player.x + 15) - (en.x + en.w / 2)) < (en.w / 2 + 15);
-            const hitY = Math.abs((player.y + 20) - (en.y + en.h / 2)) < (en.h / 2 + 20);
+    platforms.forEach(p => p.draw());
+    projectiles = projectiles.filter(p => { p.update(dt); p.draw(); return p.l > 0; });
 
-            if (!en.dead && hitX && hitY) {
-                if (player.vy > 1 && player.y + player.height < en.y + 20) {
-                    player.vy = -12;
-                    en.dead = true;
-                    playSound('hit');
-                    return false;
-                }
-                player.hit();
-            }
+    enemies = enemies.filter(en => {
+        en.update(dt);
+        en.draw();
 
-            projectiles.forEach(pr => {
-                if (pr.l <= 0) return;
-                const prHitX = Math.abs(pr.x - (en.x + en.w / 2)) < en.w / 2 + 10;
-                const prHitY = Math.abs(pr.y - (en.y + en.h / 2)) < en.h / 2 + 10;
-                if (prHitX && prHitY) {
-                    en.hp--;
-                    pr.l = 0;
-                    if (en.hp <= 0) {
-                        en.dead = true;
-                        playSound('kill');
-                    } else {
-                        playSound('hit');
-                        en.x += 5;
-                    }
-                }
-            });
+        if (!player) return true;
 
-            return !en.dead && en.x > cameraX - 100;
-        });
+        const hitX = Math.abs((player.x + 15) - (en.x + en.w / 2)) < (en.w / 2 + 15);
+        const hitY = Math.abs((player.y + 20) - (en.y + en.h / 2)) < (en.h / 2 + 20);
 
-        collectibles = collectibles.filter(c => {
-            if (!player) return true;
-            c.draw();
-            if (Math.abs(player.x - c.x) < 30 && Math.abs(player.y - c.y) < 40) {
-                let points = 0;
-                if (c.type === '☕') {
-                    if (player.lives < 5) player.lives++;
-                    points = 20;
-                } else if (c.type === ';') {
-                    points = 50;
-                } else {
-                    points = 1;
-                }
-                bitsCollected += points;
-                playSound('collect');
+        if (!en.dead && hitX && hitY) {
+            if (player.vy > 1 && player.y + player.height < en.y + 20) {
+                player.vy = -12;
+                en.dead = true;
+                playSound('hit');
                 return false;
             }
-            return c.x > cameraX - 100;
+            player.hit();
+        }
+
+        projectiles.forEach(pr => {
+            if (pr.l <= 0) return;
+            const prHitX = Math.abs(pr.x - (en.x + en.w / 2)) < en.w / 2 + 10;
+            const prHitY = Math.abs(pr.y - (en.y + en.h / 2)) < en.h / 2 + 10;
+            if (prHitX && prHitY) {
+                en.hp--;
+                pr.l = 0;
+                if (en.hp <= 0) {
+                    en.dead = true;
+                    playSound('kill');
+                } else {
+                    playSound('hit');
+                    en.x += 5 * dt;
+                }
+            }
         });
 
-        if (player) {
-            player.update();
-            player.draw();
-        }
-        updateUI();
-    }
+        return !en.dead && en.x > cameraX - 100;
+    });
 
-    // Crucial: Always request next frame to keep loop alive even when paused
+    collectibles = collectibles.filter(c => {
+        if (!player) return true;
+        c.draw();
+        if (Math.abs(player.x - c.x) < 30 && Math.abs(player.y - c.y) < 40) {
+            let points = 0;
+            if (c.type === '☕') {
+                if (player.lives < 5) player.lives++;
+                points = 20;
+            } else if (c.type === ';') {
+                points = 50;
+            } else {
+                points = 1;
+            }
+            bitsCollected += points;
+            playSound('collect');
+            return false;
+        }
+        return c.x > cameraX - 100;
+    });
+
+    if (player) {
+        player.update(dt);
+        player.draw();
+    }
+    updateUI();
+
     animationId = requestAnimationFrame(gameLoop);
 }
 
@@ -1218,7 +1265,7 @@ const updateJoystick = (e) => {
     let diffY = touch.clientY - joystickCenter.y;
 
     const dist = Math.sqrt(diffX * diffX + diffY * diffY);
-    const maxDist = 40; // Updated to match new size (80px base / 2)
+    const maxDist = 45; // Updated to match new size (90px base / 2)
 
     if (dist > maxDist) {
         diffX *= maxDist / dist;
@@ -1299,12 +1346,11 @@ const pauseBtn = document.getElementById('btn-pause');
 pauseBtn.addEventListener('click', () => {
     isPaused = !isPaused;
     pauseBtn.innerText = isPaused ? '▶' : '⏸';
-    document.getElementById('status').innerText = isPaused ? 'DURUM: DURAKLADI' : 'DURUM: ÇALIŞIYOR...';
+    updateIsland(isPaused ? 'DURUM: DURAKLADI' : 'DURUM: ÇALIŞIYOR...');
 
-    if (isPaused) {
-        cancelAnimationFrame(animationId);
-    } else {
-        gameLoop();
+    if (!isPaused) {
+        lastTimestamp = 0;
+        requestAnimationFrame(gameLoop);
     }
 });
 
@@ -1350,7 +1396,7 @@ const infoModal = document.getElementById('info-modal');
 
 infoBtn.addEventListener('click', () => {
     isPaused = true;
-    document.getElementById('status').innerText = 'DURUM: BİLGİ';
+    updateIsland('DURUM: BİLGİ');
     infoModal.classList.remove('hidden');
 });
 
@@ -1360,8 +1406,9 @@ document.getElementById('btn-close-info').addEventListener('click', () => {
     if (!isGameOver) {
         overlay.classList.add('hidden');
         isPaused = false;
-        document.getElementById('status').innerText = 'DURUM: ÇALIŞIYOR...';
-        gameLoop();
+        updateIsland('DURUM: ÇALIŞIYOR...');
+        lastTimestamp = 0;
+        requestAnimationFrame(gameLoop);
     }
 });
 
@@ -1371,8 +1418,9 @@ document.getElementById('btn-close-custom').addEventListener('click', () => {
     if (!isGameOver) {
         overlay.classList.add('hidden');
         isPaused = false;
-        document.getElementById('status').innerText = 'DURUM: ÇALIŞIYOR...';
-        gameLoop();
+        updateIsland('DURUM: ÇALIŞIYOR...');
+        lastTimestamp = 0;
+        requestAnimationFrame(gameLoop);
     } else {
         document.querySelector('.modal h1').parentElement.classList.remove('hidden');
     }
@@ -1381,19 +1429,13 @@ document.getElementById('btn-close-custom').addEventListener('click', () => {
 const settingsFixedBtn = document.getElementById('btn-settings-fixed');
 settingsFixedBtn.addEventListener('click', () => {
     isPaused = true;
-    document.getElementById('status').innerText = 'STATUS: SETTINGS';
+    updateIsland('STATUS: SETTINGS', 'important');
     document.getElementById('customizer').classList.remove('hidden');
     overlay.classList.remove('hidden');
     // Hide game over stuff if it was open
     const gameOverContent = document.querySelector('.modal h1').parentElement;
     if (gameOverContent) gameOverContent.classList.add('hidden');
 });
-
-function initLevel() {
-    isGameOver = false; isPaused = false; cameraX = 0; distanceTraveled = 0; bitsCollected = 0;
-    platforms = [new Platform(0, canvas.height * 0.7, 600, 20, 'pipe')];
-    player.reset(); gameLoop();
-}
 
 document.getElementById('btn-restart').addEventListener('click', () => {
     overlay.classList.add('hidden');
@@ -1469,7 +1511,6 @@ function startGame() {
     initLevel();
     if (typeof setFavicon === 'function') setFavicon();
     updateUI();
-    gameLoop();
 }
 
 // Start everything when the window loads
