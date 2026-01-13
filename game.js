@@ -30,21 +30,10 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
         return this;
     };
 }
-const scoreElement = document.getElementById('score');
-const bitsElement = document.getElementById('bits');
-const finalScoreElement = document.getElementById('final-score');
-const overlay = document.getElementById('overlay');
-const restartBtn = document.getElementById('btn-restart');
-
-const joystickBase = document.getElementById('joystick-base');
-const joystickStick = document.getElementById('joystick-stick');
-const shootBtn = document.getElementById('btn-shoot');
-const jumpBtn = document.getElementById('btn-jump');
-
-// --- DYNAMIC ISLAND (iPhone 17+ Aesthetic) ---
-let island = document.getElementById('dynamic-island');
-let islandText = document.getElementById('island-text');
-let islandTimeout;
+// --- GLOBALS ---
+let scoreElement, bitsElement, finalScoreElement, overlay, restartBtn;
+let joystickBase, joystickStick, shootBtn, jumpBtn;
+let island, islandText, islandTimeout;
 
 function updateIsland(text, type = 'normal') {
     if (!island) island = document.getElementById('dynamic-island');
@@ -1640,29 +1629,40 @@ function setFavicon() {
     document.getElementsByTagName('head')[0].appendChild(link);
 }
 
-// Initialize Everything
-let player;
+function initDOMElements() {
+    scoreElement = document.getElementById('score');
+    bitsElement = document.getElementById('bits');
+    finalScoreElement = document.getElementById('final-score');
+    overlay = document.getElementById('overlay');
+    restartBtn = document.getElementById('btn-restart');
+    joystickBase = document.getElementById('joystick-base');
+    joystickStick = document.getElementById('joystick-stick');
+    shootBtn = document.getElementById('btn-shoot');
+    jumpBtn = document.getElementById('btn-jump');
+    island = document.getElementById('dynamic-island');
+    islandText = document.getElementById('island-text');
+}
 
 function startGame() {
-    resize(); // Now safe to call
+    initDOMElements();
+    resize();
     player = new Player();
     initLevel();
     if (typeof setFavicon === 'function') setFavicon();
     updateUI();
-    // iPhone-style Game Mode Activation
+
     setTimeout(() => {
         updateIsland('OYUN MODU: AKTİF', 'important');
-        // Visual 'Game Mode' feedback: Brief Flash
-        const canvas = document.getElementById('gameCanvas');
-        canvas.style.filter = 'brightness(1.5) saturate(1.2)';
-        setTimeout(() => canvas.style.filter = '', 500);
+        if (canvas) {
+            canvas.style.filter = 'brightness(1.5) saturate(1.2)';
+            setTimeout(() => canvas.style.filter = '', 500);
+        }
     }, 500);
-    // Start game loop
+
     lastTimestamp = 0;
     requestAnimationFrame(gameLoop);
 }
 
-// Start everything when the window loads or immediately if already loaded
 if (document.readyState === 'complete') {
     startGame();
 } else {
