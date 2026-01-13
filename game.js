@@ -41,6 +41,33 @@ const joystickStick = document.getElementById('joystick-stick');
 const shootBtn = document.getElementById('btn-shoot');
 const jumpBtn = document.getElementById('btn-jump');
 
+// --- DYNAMIC ISLAND (iPhone 17+ Aesthetic) ---
+let island = document.getElementById('dynamic-island');
+let islandText = document.getElementById('island-text');
+let islandTimeout;
+
+function updateIsland(text, type = 'normal') {
+    if (!island) island = document.getElementById('dynamic-island');
+    if (!islandText) islandText = document.getElementById('island-text');
+    if (!island || !islandText) return;
+
+    clearTimeout(islandTimeout);
+    island.className = '';
+    if (type === 'rank-up') island.classList.add('rank-up', 'expanding');
+    else if (type === 'important') island.classList.add('expanding');
+
+    islandText.innerText = text;
+    island.style.transform = 'scale(1.1)';
+    setTimeout(() => { if (island) island.style.transform = 'scale(1)'; }, 200);
+
+    if (type !== 'normal') {
+        islandTimeout = setTimeout(() => {
+            if (island) island.className = '';
+            if (islandText) islandText.innerText = (typeof isPaused !== 'undefined' && isPaused) ? 'SİSTEM DURAKLADI' : '';
+        }, 3000);
+    }
+}
+
 // --- CONSTANTS (Slower, Managed Physics) ---
 const GRAVITY = 0.4;
 const FRICTION = 0.8;
@@ -167,7 +194,7 @@ function resize() {
     }
 }
 window.addEventListener('resize', resize);
-resize();
+// Initial resize will be called inside startGame or window.onload to ensure DOM and variables are ready
 
 // --- PLAYER ---
 class Player {
@@ -957,38 +984,6 @@ class Collectible {
 }
 
 
-// --- DYNAMIC ISLAND (iPhone 17+ Aesthetic) ---
-const island = document.getElementById('dynamic-island');
-const islandText = document.getElementById('island-text');
-let islandTimeout;
-
-function updateIsland(text, type = 'normal') {
-    if (!island || !islandText) return;
-
-    clearTimeout(islandTimeout);
-
-    // Reset classes
-    island.className = '';
-    if (type === 'rank-up') island.classList.add('rank-up', 'expanding');
-    else if (type === 'important') island.classList.add('expanding');
-
-    islandText.innerText = text;
-
-    // Pulse animation
-    island.style.transform = 'scale(1.1)';
-    setTimeout(() => {
-        island.style.transform = 'scale(1)';
-    }, 200);
-
-    // Auto-shrink after 3 seconds if it was an important/rank-up message
-    if (type !== 'normal') {
-        islandTimeout = setTimeout(() => {
-            island.className = '';
-            islandText.innerText = isPaused ? 'SİSTEM DURAKLADI' : '';
-        }, 3000);
-    }
-}
-
 // --- UI & PROGRESSION ---
 function updateUI() {
     // Score
@@ -1649,6 +1644,7 @@ function setFavicon() {
 let player;
 
 function startGame() {
+    resize(); // Now safe to call
     player = new Player();
     initLevel();
     if (typeof setFavicon === 'function') setFavicon();
