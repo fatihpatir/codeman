@@ -65,7 +65,7 @@ const keys = {};
 
 // --- BACKGROUND IMAGE LOADING ---
 const bgImg = new Image();
-bgImg.src = 'backgroud.png';
+bgImg.src = 'motherboard_bg.png';
 let bgLoaded = false;
 bgImg.onload = () => { bgLoaded = true; };
 
@@ -76,24 +76,32 @@ function drawParallaxBackground() {
         return;
     }
 
-    // 1. Slow Parallax Movement (Moves at 5% of camera speed)
-    const scale = canvas.height / bgImg.height;
-    const drawWidth = bgImg.width * scale;
+    // 1. Better Scaling: Aspect-ratio aware fill
+    const aspect = bgImg.width / bgImg.height;
+    let drawHeight = canvas.height;
+    let drawWidth = drawHeight * aspect;
+
+    // Background moves much slower than the foreground
+    const moveX = (cameraX * 0.15); // Adjust for desired depth
 
     ctx.save();
-    // 2. Reduced Depth Blur for better visibility
-    ctx.filter = 'blur(1.5px)';
 
-    // Tiled horizontal draw
-    let xOffset = -(cameraX * 0.05) % drawWidth;
-    ctx.drawImage(bgImg, xOffset, 0, drawWidth, canvas.height);
-    ctx.drawImage(bgImg, xOffset + drawWidth, 0, drawWidth, canvas.height);
-    if (xOffset > 0) ctx.drawImage(bgImg, xOffset - drawWidth, 0, drawWidth, canvas.height);
+    // Tiled horizontal draw for seamless loop
+    let xOffset = -(moveX % drawWidth);
+
+    // Draw enough tiles to cover the entire screen + padding
+    for (let i = -1; i < Math.ceil(canvas.width / drawWidth) + 1; i++) {
+        ctx.drawImage(bgImg, xOffset + (i * drawWidth), 0, drawWidth, canvas.height);
+    }
 
     ctx.restore();
 
-    // 3. Adjusted Dark Overlay for better contrast and visibility
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+    // 2. Cinematic Depth Overlay
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, 'rgba(13, 17, 23, 0.4)'); // Dark top
+    grad.addColorStop(0.5, 'rgba(0, 0, 0, 0)');    // Clear middle
+    grad.addColorStop(1, 'rgba(13, 17, 23, 0.8)'); // Dark bottom for ground blend
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -134,7 +142,7 @@ resize();
 class Player {
     constructor() { this.reset(); }
     reset() {
-        this.width = 30; this.height = 45;
+        this.width = 36; this.height = 54; // Enlarged by 20% (from 30x45)
         this.x = 200; this.y = groundY - this.height - 100;
         this.vx = 0; this.vy = 0;
         this.onGround = false; this.doubleJumpAvailable = true;
@@ -174,6 +182,7 @@ class Player {
     draw() {
         ctx.save();
         ctx.translate(this.x - cameraX, this.y);
+        ctx.scale(this.width / 30, this.height / 45); // Scale drawing to match hitbox
 
         // Flash when hurt
         if (this.invulnerable > 0) {
@@ -416,17 +425,17 @@ class Player {
         if (this.shootCooldown > 0) return;
 
         // Base shooting position (middle of torso)
-        let spawnY = this.y + 20;
+        let spawnY = this.y + (20 * (this.height / 45));
         let pvx = this.facing * 16;
         let pvy = 0;
 
         // Dynamic Aiming
         if (this.ducking) {
-            spawnY = this.y + 32; // Lower spawn height
-            pvy = 4;              // Shoot diagonally down
+            spawnY = this.y + (32 * (this.height / 45)); // Lower spawn height
+            pvy = 4;                                     // Shoot diagonally down
         } else if (this.lookingUp) {
-            spawnY = this.y + 10; // Higher spawn height
-            pvy = -4;             // Shoot diagonally up
+            spawnY = this.y + (10 * (this.height / 45)); // Higher spawn height
+            pvy = -4;                                    // Shoot diagonally up
         }
 
         const spawnX = this.x + (this.facing === 1 ? 30 : 0);
@@ -944,7 +953,7 @@ function updateIsland(text, type = 'normal') {
     if (type !== 'normal') {
         islandTimeout = setTimeout(() => {
             island.className = '';
-            islandText.innerText = isPaused ? 'DURUM: DURAKLADI' : 'DURUM: ÇALIŞIYOR...';
+            islandText.innerText = isPaused ? 'SİSTEM DURAKLADI' : '';
         }, 3000);
     }
 }
@@ -1031,18 +1040,22 @@ function drawWorld() {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
     }
 
-    // 3. GROUND LAYER (Lower 25% - More visible for clarity)
+    // 3. GROUND LAYER
     const gGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
-    gGrad.addColorStop(0, 'rgba(4, 18, 8, 0.75)'); // Increased opacity
-    gGrad.addColorStop(1, 'rgba(1, 8, 3, 0.95)');
+    gGrad.addColorStop(0, 'rgba(13, 17, 23, 0.95)');
+    gGrad.addColorStop(1, '#000');
     ctx.fillStyle = gGrad;
     ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-    // Traces on ground
-    ctx.strokeStyle = 'rgba(46, 160, 67, 0.3)';
-    for (let i = 0; i < canvas.width + 400; i += 200) {
-        let gx = i - (cameraX * 1.0 % 200);
-        ctx.beginPath(); ctx.moveTo(gx, groundY); ctx.lineTo(gx - 100, canvas.height); ctx.stroke();
+    // Subtle Grid on ground
+    ctx.strokeStyle = 'rgba(46, 160, 67, 0.15)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width + 400; i += 100) {
+        let gx = i - (cameraX * 1.0 % 100);
+        ctx.beginPath();
+        ctx.moveTo(gx, groundY);
+        ctx.lineTo(gx - 150, canvas.height);
+        ctx.stroke();
     }
 
     // 4. FOREGROUND OVERLAY
@@ -1070,7 +1083,6 @@ function initLevel() {
 
     player.reset();
     lastTimestamp = 0;
-    requestAnimationFrame(gameLoop);
 }
 
 function generate() {
@@ -1198,11 +1210,49 @@ function gameLoop(timestamp) {
     animationId = requestAnimationFrame(gameLoop);
 }
 
+// --- PWA INSTALLATION & ONBOARDING ---
+let deferredPrompt;
+const onboarding = document.getElementById('pwa-onboarding');
+const installBtn = document.getElementById('btn-pwa-main');
+const skipBtn = document.getElementById('btn-skip-pwa');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show splash only if app is not yet installed and we are at start
+    onboarding.classList.remove('hidden');
+    updateIsland('UYGULAMAYI KUR', 'important');
+});
+
+installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        updateIsland('SİSTEME KURULUYOR...');
+    }
+    deferredPrompt = null;
+    onboarding.classList.add('hidden');
+});
+
+skipBtn.addEventListener('click', () => {
+    onboarding.classList.add('hidden');
+    updateIsland('WEB MODUNDA BAŞLATILDI');
+});
+
+window.addEventListener('appinstalled', () => {
+    updateIsland('SİSTEME EKLENDİ!', 'rank-up');
+    onboarding.classList.add('hidden');
+});
+
 // --- AUDIO & UI ---
 let audioCtx;
 let masterGainNode;
+let bgmOscillator;
+let bgmGainNode;
 let isMuted = false;
 let currentVolume = 0.5;
+let isBGMPlaying = false;
 
 const initAudio = () => {
     if (audioCtx) return;
@@ -1210,6 +1260,46 @@ const initAudio = () => {
     masterGainNode = audioCtx.createGain();
     masterGainNode.gain.value = currentVolume;
     masterGainNode.connect(audioCtx.destination);
+
+    playBGM();
+};
+
+const playBGM = () => {
+    if (!audioCtx || isBGMPlaying || isMuted) return;
+
+    bgmGainNode = audioCtx.createGain();
+    bgmGainNode.gain.value = 0.1;
+    bgmGainNode.connect(masterGainNode);
+
+    const playNote = (segments, startTime) => {
+        if (!isBGMPlaying) return;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(segments[0], startTime);
+        g.gain.setValueAtTime(0.05, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+        osc.connect(g);
+        g.connect(bgmGainNode);
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+    };
+
+    let time = audioCtx.currentTime;
+    const sequence = () => {
+        if (!isBGMPlaying || isMuted) return;
+        const notes = [110, 110, 123, 146, 110, 110, 164, 146]; // More melodic
+        notes.forEach((n, i) => playNote([n], time + i * 0.4)); // Slightly slower
+        time += notes.length * 0.4;
+        setTimeout(sequence, notes.length * 400);
+    };
+
+    isBGMPlaying = true;
+    sequence();
+};
+
+const stopBGM = () => {
+    isBGMPlaying = false;
 };
 
 const playSound = (t) => {
@@ -1358,11 +1448,15 @@ const pauseBtn = document.getElementById('btn-pause');
 pauseBtn.addEventListener('click', () => {
     isPaused = !isPaused;
     pauseBtn.innerText = isPaused ? '▶' : '⏸';
-    updateIsland(isPaused ? 'DURUM: DURAKLADI' : 'DURUM: ÇALIŞIYOR...');
+    updateIsland(isPaused ? 'SİSTEM DURAKLADI' : '');
 
     if (!isPaused) {
         lastTimestamp = 0;
-        requestAnimationFrame(gameLoop);
+        animationId = requestAnimationFrame(gameLoop);
+        playBGM();
+    } else {
+        cancelAnimationFrame(animationId);
+        stopBGM();
     }
 });
 
@@ -1418,40 +1512,43 @@ document.getElementById('btn-close-info').addEventListener('click', () => {
     if (!isGameOver) {
         overlay.classList.add('hidden');
         isPaused = false;
-        updateIsland('DURUM: ÇALIŞIYOR...');
+        updateIsland('');
         lastTimestamp = 0;
-        requestAnimationFrame(gameLoop);
+        animationId = requestAnimationFrame(gameLoop);
+        playBGM();
     }
 });
 
 document.getElementById('btn-close-custom').addEventListener('click', () => {
     document.getElementById('customizer').classList.add('hidden');
-    // Only hide overlay if we are not in a game over state
+    overlay.classList.add('hidden');
+
     if (!isGameOver) {
-        overlay.classList.add('hidden');
         isPaused = false;
-        updateIsland('DURUM: ÇALIŞIYOR...');
+        updateIsland('');
         lastTimestamp = 0;
-        requestAnimationFrame(gameLoop);
-    } else {
-        document.querySelector('.modal h1').parentElement.classList.remove('hidden');
+        animationId = requestAnimationFrame(gameLoop);
+        playBGM();
     }
 });
 
 const settingsFixedBtn = document.getElementById('btn-settings-fixed');
 settingsFixedBtn.addEventListener('click', () => {
+    if (isGameOver) return;
+
     isPaused = true;
-    updateIsland('STATUS: SETTINGS', 'important');
+    cancelAnimationFrame(animationId);
+    stopBGM();
+
+    updateIsland('SİSTEM AYARLARI', 'important');
     document.getElementById('customizer').classList.remove('hidden');
     overlay.classList.remove('hidden');
-    // Hide game over stuff if it was open
-    const gameOverContent = document.querySelector('.modal h1').parentElement;
-    if (gameOverContent) gameOverContent.classList.add('hidden');
 });
 
 document.getElementById('btn-restart').addEventListener('click', () => {
     overlay.classList.add('hidden');
     initLevel();
+    animationId = requestAnimationFrame(gameLoop);
 });
 
 function gameOver() {
@@ -1516,13 +1613,24 @@ function setFavicon() {
 }
 
 // Initialize Everything
-let player; // Switch to let for better initialization control
+let player;
 
 function startGame() {
     player = new Player();
     initLevel();
     if (typeof setFavicon === 'function') setFavicon();
     updateUI();
+    // iPhone-style Game Mode Activation
+    setTimeout(() => {
+        updateIsland('OYUN MODU: AKTİF', 'important');
+        // Visual 'Game Mode' feedback: Brief Flash
+        const canvas = document.getElementById('gameCanvas');
+        canvas.style.filter = 'brightness(1.5) saturate(1.2)';
+        setTimeout(() => canvas.style.filter = '', 500);
+    }, 500);
+    // Start game loop
+    lastTimestamp = 0;
+    requestAnimationFrame(gameLoop);
 }
 
 // Start everything when the window loads

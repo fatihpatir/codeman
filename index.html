@@ -17,7 +17,7 @@
     <div id="game-container">
         <div id="dynamic-island-container">
             <div id="dynamic-island">
-                <span id="island-text">DURUM: ÇALIŞIYOR...</span>
+                <span id="island-text"></span>
             </div>
         </div>
         <div id="ui-layer">
@@ -29,7 +29,7 @@
                     <span id="bits-label">BITS: <span id="bits">0</span></span>
                 </div>
             </div>
-            <div id="status">DURUM: ÇALIŞIYOR...</div>
+
 
         </div>
 
@@ -54,7 +54,7 @@
             </div>
         </div>
 
-        <div id="customizer" class="hidden">
+        <div id="customizer" class="modal hidden">
             <h3>AYARLAR & KOSTÜM</h3>
 
             <div class="setting-group">
@@ -105,10 +105,15 @@
             </div>
         </div>
 
-        <!-- PWA Install Prompt -->
-        <div id="pwa-toast" class="hidden">
-            <p>Uygulamayı ana ekrana ekle!</p>
-            <button id="btn-pwa">YÜKLE</button>
+        <!-- PWA Onboarding Splash -->
+        <div id="pwa-onboarding" class="hidden">
+            <div class="onboarding-card">
+                <div class="splash-icon">🚀</div>
+                <h2>HER ŞEY HAZIR!</h2>
+                <p>En iyi deneyim için oyunu ana ekrana ekle ve cihazını yan çevirerek oynamaya başla.</p>
+                <button id="btn-pwa-main" class="install-btn">OYUNU YÜKLE</button>
+                <button id="btn-skip-pwa" class="skip-btn">ŞİMDİ DEĞİL (TARAYICIDA OYNA)</button>
+            </div>
         </div>
 
         <div id="overlay" class="hidden">
