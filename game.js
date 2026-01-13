@@ -1215,8 +1215,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     // Show splash only if app is not yet installed and we are at start
-    onboarding.classList.remove('hidden');
-    updateIsland('UYGULAMAYI KUR', 'important');
+    if (onboarding) onboarding.classList.remove('hidden');
+    console.log('UYGULAMAYI KUR');
 });
 
 installBtn.addEventListener('click', async () => {

@@ -44,10 +44,14 @@ body {
 /* Control Panel */
 #controls {
     position: absolute;
-    bottom: 12px;
+    bottom: 0;
     left: 0;
     right: 0;
-    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    height: 180px;
+    /* Take enough height but keep bottom anchored */
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    padding-left: calc(15px + env(safe-area-inset-left));
+    padding-right: calc(15px + env(safe-area-inset-right));
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
@@ -57,10 +61,11 @@ body {
 
 #joystick-container {
     pointer-events: auto;
-    padding-left: 20px;
-    padding-bottom: 10px;
-    width: 160px;
-    height: 160px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #joystick-base {
@@ -120,7 +125,6 @@ body {
     display: flex;
     gap: 15px;
     pointer-events: auto;
-    padding-right: 20px;
     padding-bottom: 10px;
 }
 
