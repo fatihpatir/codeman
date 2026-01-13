@@ -35,6 +35,7 @@ let groundY = window.innerHeight * 0.85; // Lower ground for better visibility
 
 let isGameOver = false;
 let isPaused = false;
+let pausedByOrientation = false; // Track if we forced pause due to flip
 let cameraX = 0;
 let distanceTraveled = 0;
 let bitsCollected = 0;
@@ -109,10 +110,21 @@ function resize() {
         warning.classList.remove('hidden');
         if (!isPaused && !isGameOver) {
             isPaused = true;
+            pausedByOrientation = true;
             document.getElementById('btn-pause').innerText = '▶';
+            updateIsland('LÜTFEN CİHAZI ÇEVİRİN');
         }
     } else {
         warning.classList.add('hidden');
+        // Auto-resume only if it was paused by orientation
+        if (isPaused && pausedByOrientation && !isGameOver) {
+            isPaused = false;
+            pausedByOrientation = false;
+            document.getElementById('btn-pause').innerText = '⏸';
+            updateIsland('SİSTEM HAZIR!');
+            lastTimestamp = 0;
+            requestAnimationFrame(gameLoop);
+        }
     }
 }
 window.addEventListener('resize', resize);
