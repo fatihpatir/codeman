@@ -1381,6 +1381,11 @@ const updateJoystick = (e) => {
 
 const startJoystick = (e) => {
     initAudio(); // Unlock audio on first touch
+    
+    // Ensure elements are ready
+    if (!joystickBase || !jumpBtn || !shootBtn) initDOMElements();
+    if (!joystickBase) return;
+
     const touch = e.touches ? e.touches[0] : e;
     const rect = joystickBase.getBoundingClientRect();
 

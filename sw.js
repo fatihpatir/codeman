@@ -1,4 +1,4 @@
-const CACHE_NAME = 'parkur-v5';
+const CACHE_NAME = 'parkur-v6';
 const ASSETS = [
     './',
     './index.html',
