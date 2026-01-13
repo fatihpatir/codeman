@@ -12,11 +12,11 @@ const shootBtn = document.getElementById('btn-shoot');
 const jumpBtn = document.getElementById('btn-jump');
 
 // --- CONSTANTS (Sharper Physics) ---
-const GRAVITY = 0.8;
-const FRICTION = 0.85;
-const JUMP_FORCE = -15;
-const ACCELERATION = 1.2;
-const MAX_SPEED = 10;
+const GRAVITY = 0.7; // Slightly lighter gravity
+const FRICTION = 0.88; // Slightly more friction for better stopping
+const JUMP_FORCE = -14; // Adjusted for new gravity
+const ACCELERATION = 0.8; // Reduced from 1.2
+const MAX_SPEED = 7; // Reduced from 10
 
 // --- CINEMATIC THEME ---
 const THEME = {
@@ -1218,7 +1218,7 @@ const updateJoystick = (e) => {
     let diffY = touch.clientY - joystickCenter.y;
 
     const dist = Math.sqrt(diffX * diffX + diffY * diffY);
-    const maxDist = 50; // Updated to match new size (100px base / 2)
+    const maxDist = 40; // Updated to match new size (80px base / 2)
 
     if (dist > maxDist) {
         diffX *= maxDist / dist;
