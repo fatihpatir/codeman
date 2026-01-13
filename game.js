@@ -33,30 +33,10 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 // --- GLOBALS (Using var to avoid TDZ on legacy iOS) ---
 var scoreElement, bitsElement, finalScoreElement, overlay, restartBtn;
 var joystickBase, joystickStick, shootBtn, jumpBtn;
-var island, islandText, islandTimeout;
-console.log("Sistem Versiyonu: 2.1.2 (iOS Bugfix)");
+// island related globals removed
+console.log("Sistem Versiyonu: 2.1.3 (UI Refinement)");
 
-function updateIsland(text, type = 'normal') {
-    if (!island) island = document.getElementById('dynamic-island');
-    if (!islandText) islandText = document.getElementById('island-text');
-    if (!island || !islandText) return;
-
-    clearTimeout(islandTimeout);
-    island.className = '';
-    if (type === 'rank-up') island.classList.add('rank-up', 'expanding');
-    else if (type === 'important') island.classList.add('expanding');
-
-    islandText.innerText = text;
-    island.style.transform = 'scale(1.1)';
-    setTimeout(() => { if (island) island.style.transform = 'scale(1)'; }, 200);
-
-    if (type !== 'normal') {
-        islandTimeout = setTimeout(() => {
-            if (island) island.className = '';
-            if (islandText) islandText.innerText = (typeof isPaused !== 'undefined' && isPaused) ? 'SİSTEM DURAKLADI' : '';
-        }, 3000);
-    }
-}
+// updateIsland removed
 
 // --- CONSTANTS (Slower, Managed Physics) ---
 const GRAVITY = 0.4;
@@ -168,7 +148,7 @@ function resize() {
             isPaused = true;
             pausedByOrientation = true;
             document.getElementById('btn-pause').innerText = '▶';
-            updateIsland('LÜTFEN CİHAZI ÇEVİRİN');
+            console.log('LÜTFEN CİHAZI ÇEVİRİN');
         }
     } else {
         warning.classList.add('hidden');
@@ -177,7 +157,7 @@ function resize() {
             isPaused = false;
             pausedByOrientation = false;
             document.getElementById('btn-pause').innerText = '⏸';
-            updateIsland('SİSTEM HAZIR!');
+            console.log('SİSTEM HAZIR!');
             lastTimestamp = 0;
             requestAnimationFrame(gameLoop);
         }
@@ -999,7 +979,6 @@ function updateUI() {
 
     if (newRankIndex > currentRankIndex) {
         currentRankIndex = newRankIndex;
-        updateIsland(`TERFİ: ${RANKS[currentRankIndex].title}!`, 'rank-up');
         showRankUp(RANKS[currentRankIndex]);
     }
 
@@ -1245,7 +1224,7 @@ installBtn.addEventListener('click', async () => {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-        updateIsland('SİSTEME KURULUYOR...');
+        console.log('SİSTEME KURULUYOR...');
     }
     deferredPrompt = null;
     onboarding.classList.add('hidden');
@@ -1253,11 +1232,11 @@ installBtn.addEventListener('click', async () => {
 
 skipBtn.addEventListener('click', () => {
     onboarding.classList.add('hidden');
-    updateIsland('WEB MODUNDA BAŞLATILDI');
+    console.log('WEB MODUNDA BAŞLATILDI');
 });
 
 window.addEventListener('appinstalled', () => {
-    updateIsland('SİSTEME EKLENDİ!', 'rank-up');
+    console.log('SİSTEME EKLENDİ!');
     onboarding.classList.add('hidden');
 });
 
@@ -1465,7 +1444,6 @@ const pauseBtn = document.getElementById('btn-pause');
 pauseBtn.addEventListener('click', () => {
     isPaused = !isPaused;
     pauseBtn.innerText = isPaused ? '▶' : '⏸';
-    updateIsland(isPaused ? 'SİSTEM DURAKLADI' : '');
 
     if (!isPaused) {
         lastTimestamp = 0;
@@ -1519,7 +1497,6 @@ const infoModal = document.getElementById('info-modal');
 
 infoBtn.addEventListener('click', () => {
     isPaused = true;
-    updateIsland('DURUM: BİLGİ');
     infoModal.classList.remove('hidden');
 });
 
@@ -1529,7 +1506,6 @@ document.getElementById('btn-close-info').addEventListener('click', () => {
     if (!isGameOver) {
         overlay.classList.add('hidden');
         isPaused = false;
-        updateIsland('');
         lastTimestamp = 0;
         animationId = requestAnimationFrame(gameLoop);
         playBGM();
@@ -1542,7 +1518,6 @@ document.getElementById('btn-close-custom').addEventListener('click', () => {
 
     if (!isGameOver) {
         isPaused = false;
-        updateIsland('');
         lastTimestamp = 0;
         animationId = requestAnimationFrame(gameLoop);
         playBGM();
@@ -1557,7 +1532,6 @@ settingsFixedBtn.addEventListener('click', () => {
     cancelAnimationFrame(animationId);
     stopBGM();
 
-    updateIsland('SİSTEM AYARLARI', 'important');
     document.getElementById('customizer').classList.remove('hidden');
     overlay.classList.remove('hidden');
 });
@@ -1640,8 +1614,6 @@ function initDOMElements() {
     joystickStick = document.getElementById('joystick-stick');
     shootBtn = document.getElementById('btn-shoot');
     jumpBtn = document.getElementById('btn-jump');
-    island = document.getElementById('dynamic-island');
-    islandText = document.getElementById('island-text');
 }
 
 function startGame() {
@@ -1653,7 +1625,6 @@ function startGame() {
     updateUI();
 
     setTimeout(() => {
-        updateIsland('OYUN MODU: AKTİF', 'important');
         if (canvas) {
             canvas.style.filter = 'brightness(1.5) saturate(1.2)';
             setTimeout(() => canvas.style.filter = '', 500);
