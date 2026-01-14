@@ -153,7 +153,8 @@ class Player {
         this.invulnerable = 0;
 
         // Keep current color if it exists, otherwise default
-        if (!this.color) this.color = THEME.glowCyan;
+        const savedColor = localStorage.getItem('codeman_player_color');
+        if (!this.color) this.color = savedColor || THEME.glowCyan;
 
         // Safety: Only update UI if we're not in the middle of a constructor call
         if (typeof player !== 'undefined') updateUI();
@@ -180,168 +181,177 @@ class Player {
     }
 
     draw() {
+        // --- PREMIUM CYBERNETIC COMMANDO LOOK ---
+        const pulse = Math.sin(Date.now() / 200) * 0.15 + 0.85;
+        const charColor = this.color;
+        const glowColor = charColor + 'AA'; // 66% opacity for glow
+        const accentColor = charColor;
+        const baseHardware = '#111820'; // Deep space blue-black
+
         ctx.save();
         ctx.translate(this.x - cameraX, this.y);
-        ctx.scale(this.width / 30, this.height / 45); // Scale drawing to match hitbox
+        ctx.scale(this.width / 30, this.height / 45);
 
-        // Flash when hurt
-        if (this.invulnerable > 0) {
-            if (Math.floor(Date.now() / 100) % 2 === 0) ctx.globalAlpha = 0.5;
-        }
-
-        const pulse = Math.sin(Date.now() / 200) * 0.15 + 0.85;
-        const color = this.color;
-        const isMoving = Math.abs(this.vx) > 0.5;
-
-        // --- DYNAMIC SQUASH & STRETCH ---
-        let scaleY = 1;
-        let offsetY = 0;
-        if (this.ducking) { scaleY = 0.6; offsetY = 15; }
-        else if (this.lookingUp) { scaleY = 1.1; offsetY = -5; }
-
-        // --- IMPACT SHADOW (Safe calculation) ---
+        // 1. DYNAMIC SHADOW (Ground Contact)
         ctx.save();
-        // Prevent negative scale which crashes some browsers
-        const shadowScale = Math.max(0, (1 - (Math.abs(this.vy) / 20))) * (this.ducking ? 1.2 : 1);
-        ctx.globalAlpha = (this.invulnerable > 0 ? 0.3 : 1) * 0.3 * shadowScale; // Combine alphas
+        const distFromGround = Math.max(0, groundY - (this.y + this.height));
+        const shadowAlpha = Math.max(0, 0.4 - (distFromGround / 100));
+        ctx.globalAlpha = shadowAlpha;
         ctx.fillStyle = '#000';
-        const shadowY = Math.max(0, groundY - this.y - this.height);
         ctx.beginPath();
-        ctx.ellipse(this.width / 2, this.height + shadowY, Math.max(0, 20 * shadowScale), Math.max(0, 5 * shadowScale), 0, 0, Math.PI * 2);
+        ctx.ellipse(15, 45, 15, 4, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        if (this.facing === -1) { ctx.scale(-1, 1); ctx.translate(-this.width, 0); }
+        if (this.invulnerable > 0 && Math.floor(Date.now() / 100) % 2 === 0) ctx.globalAlpha = 0.4;
+        if (this.facing === -1) { ctx.scale(-1, 1); ctx.translate(-30, 0); }
 
-        ctx.save();
+        // 2. SQUASH & STRETCH
+        let scaleY = 1, offsetY = 0;
+        if (this.ducking) { scaleY = 0.65; offsetY = 15; }
+        else if (this.lookingUp) { scaleY = 1.1; offsetY = -5; }
+
         ctx.translate(0, offsetY);
         ctx.scale(1, scaleY);
 
-        // --- CYBER SUIT BODY (With Volume) ---
-        const bodyGrad = ctx.createLinearGradient(0, 18, 25, 18);
-        bodyGrad.addColorStop(0, '#2d333b');
-        bodyGrad.addColorStop(0.5, '#1a1f28');
-        bodyGrad.addColorStop(1, '#0d1117');
+        // --- THE SUIT (Hard Surface Modeling) ---
 
-        ctx.fillStyle = bodyGrad;
-        ctx.strokeStyle = '#444c56';
-        ctx.lineWidth = 1;
-
-        // Shoulder Pads (Adding Volume)
+        // Casing (Back layer for depth)
+        ctx.fillStyle = '#080c10';
         ctx.beginPath();
-        ctx.roundRect(0, 16, 10, 8, 2); // Left shoulder
-        ctx.roundRect(20, 16, 10, 8, 2); // Right shoulder
+        ctx.roundRect(5, 18, 20, 20, 4);
         ctx.fill();
-        ctx.stroke();
 
-        // Main Torso
+        // Layered Body (Main Armor)
+        const armorGrad = ctx.createLinearGradient(0, 18, 0, 38);
+        armorGrad.addColorStop(0, '#1a222c');
+        armorGrad.addColorStop(1, '#0d1117');
+        ctx.fillStyle = armorGrad;
         ctx.beginPath();
-        ctx.roundRect(5, 18, 20, 18, 4);
+        ctx.roundRect(6, 19, 18, 18, 3);
         ctx.fill();
-        ctx.stroke();
 
-        // Glow Core (Power indicator)
+        // --- ACCENT LIGHTING (CIRCUITRY) ---
         ctx.save();
-        ctx.globalAlpha = 0.6 * pulse;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = color;
-        ctx.fillStyle = color;
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = accentColor;
+
+        // Vertical Energy Strip on Chest
         ctx.beginPath();
-        ctx.arc(15, 27, 3, 0, Math.PI * 2);
+        ctx.moveTo(15, 22);
+        ctx.lineTo(15, 34);
+        ctx.stroke();
+
+        // Energy Nodes (Shoulders)
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        ctx.arc(8, 22, 1.5, 0, Math.PI * 2);
+        ctx.arc(22, 22, 1.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
-        // --- PROPULSION (HOVER THRUSTER - 3D Plate) ---
-        const moveFact = Math.abs(this.vx) / MAX_SPEED;
-
-        // Thruster Base (Metallic Rim)
-        ctx.fillStyle = '#444c56';
+        // --- THRUSTERS (Premium Feet) ---
+        // Metallic Boots
+        ctx.fillStyle = '#2d333b';
         ctx.beginPath();
-        ctx.roundRect(0, 34, 30, 8, 3);
+        ctx.roundRect(4, 34, 9, 8, 2); // Left boot
+        ctx.roundRect(17, 34, 9, 8, 2); // Right boot
         ctx.fill();
 
-        // Bottom Plate
-        ctx.fillStyle = '#161b22';
-        ctx.beginPath();
-        ctx.roundRect(4, 36, 22, 4, 1);
-        ctx.fill();
-
-        // Thruster Glow
-        const thrusterPower = (this.vy < 0 || isMoving) ? 1 : 0.3;
-        const beamHeight = 15 * thrusterPower * pulse;
+        // Propulsion Core
+        const thrusterPower = (this.vy < 0 || Math.abs(this.vx) > 0.5) ? 1 : 0.4;
+        const heat = Math.sin(Date.now() / 50) * 0.2 + 0.8;
 
         ctx.save();
-        ctx.globalAlpha = 0.5 * thrusterPower;
-        const beamGrad = ctx.createLinearGradient(0, 42, 0, 42 + beamHeight);
-        beamGrad.addColorStop(0, color);
+        ctx.shadowBlur = 10 * thrusterPower;
+        ctx.shadowColor = accentColor;
+        ctx.fillStyle = accentColor;
+        ctx.globalAlpha = 0.8 * thrusterPower * heat;
+        ctx.fillRect(6, 40, 5, 4);
+        ctx.fillRect(19, 40, 5, 4);
+
+        // Energy Beam
+        const beamH = (this.vy < 0 ? 25 : 10) * thrusterPower * heat;
+        const beamGrad = ctx.createLinearGradient(0, 44, 0, 44 + beamH);
+        beamGrad.addColorStop(0, accentColor);
         beamGrad.addColorStop(1, 'transparent');
         ctx.fillStyle = beamGrad;
-        ctx.fillRect(8, 42, 14, beamHeight);
+        ctx.fillRect(6, 44, 5, beamH);
+        ctx.fillRect(19, 44, 5, beamH);
         ctx.restore();
 
-        // --- MONITOR HEAD (3D Curved Monitor) ---
+        // --- THE MONITOR (Head) ---
         ctx.save();
-        const bob = Math.sin(Date.now() / 150) * 1.5;
+        const bob = Math.sin(Date.now() / 180) * 1.2;
         ctx.translate(15, 10 + bob);
 
-        // Case Depth/Side
+        // Case (High-End Carbon Fiber Look)
         ctx.fillStyle = '#0d1117';
         ctx.beginPath();
-        ctx.roundRect(-15, -13, 30, 24, 5);
+        ctx.roundRect(-15, -13, 30, 24, 6);
         ctx.fill();
 
-        // Main Casing Grad
-        const caseGrad = ctx.createLinearGradient(-14, -14, 14, 10);
-        caseGrad.addColorStop(0, '#444c56');
-        caseGrad.addColorStop(0.4, '#2d333b');
-        caseGrad.addColorStop(1, '#161b22');
-
-        ctx.fillStyle = caseGrad;
+        // Bevel Frame (Colored Accent)
+        ctx.strokeStyle = accentColor;
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = accentColor;
         ctx.beginPath();
-        ctx.roundRect(-14, -14, 28, 24, 5);
-        ctx.fill();
+        ctx.roundRect(-14, -12, 28, 22, 5);
+        ctx.stroke();
 
-        // Bevel Highlight
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(-13.5, -13.5, 27, 23);
-
-        // Screen (CRT/Curved Effect)
-        ctx.shadowBlur = 15 * pulse;
-        ctx.shadowColor = color;
+        // Screen (OLED Deep Black)
+        ctx.shadowBlur = 0;
         ctx.fillStyle = '#000';
         ctx.beginPath();
-        ctx.roundRect(-11, -11, 22, 18, 3);
+        ctx.roundRect(-12, -10, 24, 18, 2);
         ctx.fill();
 
-        // Screen Content (Face/Expression)
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = color;
-        ctx.font = 'bold 12px monospace';
+        // HUD / Expresssion (Vibrant Glowing)
+        ctx.save();
+        ctx.shadowBlur = 12 * pulse;
+        ctx.shadowColor = accentColor;
+        ctx.fillStyle = accentColor;
+        ctx.font = 'bold 12px "Courier New", monospace';
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
 
-        let expression = '>_';
-        if (!this.onGround) expression = '^o^';
-        else if (this.ducking) expression = 'U_U';
-        else if (this.lookingUp) expression = '0.0';
-        else if (isMoving) expression = '>.<';
-        else expression = '^_^';
-        ctx.fillText(expression, 0, 2);
+        let expr = '>_';
+        if (!this.onGround) expr = '^_^';
+        else if (this.ducking) expr = 'U_U';
+        else if (Math.abs(this.vx) > 2) expr = '>.<';
+        else expr = '0_0';
 
-        // Glass Reflection (Clearer Gloss)
-        ctx.globalAlpha = 0.15;
+        ctx.fillText(expr, 0, 0);
+        ctx.restore();
+
+        // Scanline Effect (Retro Tech)
+        ctx.save();
+        ctx.globalAlpha = 0.1;
         ctx.fillStyle = '#fff';
+        for (let i = -10; i < 8; i += 2) {
+            ctx.fillRect(-12, i, 24, 0.5);
+        }
+        ctx.restore();
+
+        // Lens Flare / Reflection
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        const reflGrad = ctx.createLinearGradient(-10, -10, 10, 10);
+        reflGrad.addColorStop(0, '#fff');
+        reflGrad.addColorStop(0.5, 'transparent');
+        ctx.fillStyle = reflGrad;
         ctx.beginPath();
-        ctx.moveTo(-9, -9);
-        ctx.lineTo(0, -9);
-        ctx.lineTo(-5, 0);
-        ctx.lineTo(-12, -2);
+        ctx.moveTo(-10, -10); ctx.lineTo(10, -10); ctx.lineTo(-10, 5);
+        ctx.closePath();
         ctx.fill();
+        ctx.restore();
 
-        ctx.restore(); // Restore Head
+        ctx.restore(); // End Head
 
-        ctx.restore(); // Restore Squash/Stretch
-        ctx.restore(); // Restore Main
+        ctx.restore(); // Total Restore
     }
     update(dt) {
         if (this.invulnerable > 0) this.invulnerable--;
@@ -1243,10 +1253,11 @@ window.addEventListener('appinstalled', () => {
 // --- AUDIO & UI ---
 let audioCtx;
 let masterGainNode;
-let bgmOscillator;
 let bgmGainNode;
-let isMuted = false;
-let currentVolume = 0.5;
+let isMuted = localStorage.getItem('codeman_muted') === 'true';
+let isMusicMuted = localStorage.getItem('codeman_music_muted') === 'true';
+let currentVolume = parseFloat(localStorage.getItem('codeman_vol')) || 0.5;
+let musicVolume = parseFloat(localStorage.getItem('codeman_music_vol')) || 0.3;
 let isBGMPlaying = false;
 
 const initAudio = () => {
@@ -1260,33 +1271,64 @@ const initAudio = () => {
 };
 
 const playBGM = () => {
-    if (!audioCtx || isBGMPlaying || isMuted) return;
+    if (!audioCtx || isBGMPlaying || isMusicMuted) return;
 
     bgmGainNode = audioCtx.createGain();
-    bgmGainNode.gain.value = 0.1;
-    bgmGainNode.connect(masterGainNode);
+    bgmGainNode.gain.value = musicVolume;
+    bgmGainNode.connect(audioCtx.destination);
 
-    const playNote = (segments, startTime) => {
+    // 4-Bar Cyber Journey
+    const melody = [
+        261.63, 0, 329.63, 392.00, 523.25, 392.00, 329.63, 0,
+        349.23, 0, 440.00, 523.25, 587.33, 523.25, 440.00, 0,
+        392.00, 493.88, 587.33, 659.25, 783.99, 0, 659.25, 587.33,
+        523.25, 0, 392.00, 0, 261.63, 261.63, 0, 0
+    ];
+
+    const bassline = [
+        130.81, 130.81, 130.81, 130.81, 174.61, 174.61, 174.61, 174.61,
+        196.00, 196.00, 196.00, 196.00, 130.81, 130.81, 130.81, 130.81
+    ];
+
+    let step = 0;
+    const playSynth = (freq, startTime, type, vol, decay) => {
         if (!isBGMPlaying) return;
         const osc = audioCtx.createOscillator();
         const g = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(segments[0], startTime);
-        g.gain.setValueAtTime(0.05, startTime);
-        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        g.gain.setValueAtTime(vol, startTime);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + decay);
         osc.connect(g);
         g.connect(bgmGainNode);
         osc.start(startTime);
-        osc.stop(startTime + 0.5);
+        osc.stop(startTime + decay);
     };
 
-    let time = audioCtx.currentTime;
+    let nextNoteTime = audioCtx.currentTime;
     const sequence = () => {
-        if (!isBGMPlaying || isMuted) return;
-        const notes = [110, 110, 123, 146, 110, 110, 164, 146]; // More melodic
-        notes.forEach((n, i) => playNote([n], time + i * 0.4)); // Slightly slower
-        time += notes.length * 0.4;
-        setTimeout(sequence, notes.length * 400);
+        if (!isBGMPlaying || isMusicMuted) return;
+
+        // Lead Melody (Square Wave)
+        const freq = melody[step % melody.length];
+        if (freq > 0) {
+            playSynth(freq, nextNoteTime, 'square', 0.04, 0.2);
+        }
+
+        // Deep Bass (Triangle Wave every 2 steps)
+        if (step % 2 === 0) {
+            const bFreq = bassline[(step / 2) % bassline.length];
+            playSynth(bFreq, nextNoteTime, 'triangle', 0.12, 0.35);
+        }
+
+        // Cyber Snare (White Noise-ish)
+        if (step % 8 === 4) {
+            playSynth(80, nextNoteTime, 'sawtooth', 0.03, 0.08);
+        }
+
+        step++;
+        nextNoteTime += 0.15;
+        setTimeout(sequence, 150);
     };
 
     isBGMPlaying = true;
@@ -1353,53 +1395,159 @@ function gameOver() { isGameOver = true; playSound('hit'); overlay.classList.rem
 
 // --- INPUT HANDLING ---
 
-// D-Pad button event handlers
-const setupDpadButton = (button, direction) => {
-    if (!button) return;
+// --- SMART MOBILE CONTROLS (Floating D-Pad & Action Regions) ---
+const dpadContainer = document.getElementById('dpad-container');
+const dpadButtons = dpadContainer.querySelectorAll('.dpad-btn');
+// jumpBtn and shootBtn are already declared at the top
 
-    const activate = (e) => {
-        dpadState[direction] = true;
-        initAudio();
-        if (e.cancelable) e.preventDefault();
-    };
+// We'll track which touch is doing what
+let leftTouchId = null;
+let rightTouchId = null;
 
-    const deactivate = (e) => {
-        dpadState[direction] = false;
-        if (e.cancelable) e.preventDefault();
-    };
+const updateDpadState = (touchX, touchY, isInitial = false) => {
+    if (touchX === null) {
+        Object.keys(dpadState).forEach(k => dpadState[k] = false);
+        dpadButtons.forEach(btn => btn.classList.remove('active'));
+        dpadContainer.style.opacity = '0.15'; // Fade out even more when not in use
+        return;
+    }
 
-    // Touch events
-    button.addEventListener('touchstart', activate, { passive: false });
-    button.addEventListener('touchend', deactivate, { passive: false });
-    button.addEventListener('touchcancel', deactivate, { passive: false });
+    dpadContainer.style.opacity = '1';
 
-    // Mouse events (for desktop testing)
-    button.addEventListener('mousedown', activate);
-    button.addEventListener('mouseup', deactivate);
-    button.addEventListener('mouseleave', deactivate);
+    // 1. Dynamic Positioning: On initial touch, move the D-Pad to that spot
+    if (isInitial) {
+        const dpadWidth = dpadContainer.offsetWidth;
+        const dpadHeight = dpadContainer.offsetHeight;
+        dpadContainer.style.left = (touchX - dpadWidth / 2) + 'px';
+        dpadContainer.style.bottom = (window.innerHeight - touchY - dpadHeight / 2) + 'px';
+    }
+
+    // 2. Relative Direction Detection
+    Object.keys(dpadState).forEach(k => dpadState[k] = false);
+    dpadButtons.forEach(btn => btn.classList.remove('active'));
+
+    const rect = dpadContainer.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = touchX - centerX;
+    const dy = touchY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 15) { // Deadzone
+        const angle = Math.atan2(dy, dx);
+        const segment = (Math.round(angle / (Math.PI / 2)) + 4) % 4;
+
+        // 0: Right, 1: Down, 2: Left, 3: Up (atan2 starts from right, goes clockwise in screen space)
+        let dir = null;
+        if (segment === 0) dir = 'right';
+        else if (segment === 1) dir = 'down';
+        else if (segment === 2) dir = 'left';
+        else if (segment === 3) dir = 'up';
+
+        if (dir) {
+            if (!dpadState[dir] && "vibrate" in navigator) navigator.vibrate(10);
+            dpadState[dir] = true;
+            document.getElementById(`dpad-${dir}`).classList.add('active');
+        }
+    }
 };
 
-// Setup all D-Pad buttons
-setupDpadButton(dpadUp, 'up');
-setupDpadButton(dpadDown, 'down');
-setupDpadButton(dpadLeft, 'left');
-setupDpadButton(dpadRight, 'right');
+const createTouchFeedback = (x, y, label, color) => {
+    const feedback = document.createElement('div');
+    feedback.className = 'touch-feedback';
+    feedback.style.left = x + 'px';
+    feedback.style.top = y + 'px';
+    feedback.style.color = color;
+    feedback.innerHTML = `
+        <div class="touch-ring"></div>
+        <div class="touch-label">${label}</div>
+    `;
+    document.body.appendChild(feedback);
+    setTimeout(() => feedback.remove(), 400);
+};
 
-// Action buttons (Jump & Shoot)
-const handleTouchStart = (e) => {
+const handleGlobalTouch = (e) => {
     initAudio();
-    if (e.target === jumpBtn || jumpBtn.contains(e.target)) {
-        player.jump();
-        if (e.cancelable) e.preventDefault();
-    }
-    if (e.target === shootBtn || shootBtn.contains(e.target)) {
-        player.shoot();
-        if (e.cancelable) e.preventDefault();
+    if (e.cancelable) e.preventDefault();
+    const touches = e.changedTouches;
+
+    for (let i = 0; i < touches.length; i++) {
+        const touch = touches[i];
+        const tx = touch.clientX;
+        const ty = touch.clientY;
+        const isLeftHalf = tx < window.innerWidth / 2;
+
+        if (e.type === 'touchstart') {
+            // IGNORE UI Elements (Buttons, Modals, Sliders)
+            const target = touch.target || e.target;
+            if (target.closest('.icon-btn') || target.closest('.modal') || target.closest('.close-btn') || target.closest('input')) {
+                continue;
+            }
+
+            if (isLeftHalf && leftTouchId === null) {
+                leftTouchId = touch.identifier;
+                updateDpadState(tx, ty, true);
+            } else if (!isLeftHalf) {
+                // Right Half: Action Zones
+                if (ty > window.innerHeight * 0.4) {
+                    player.jump();
+                    createTouchFeedback(tx, ty, '[ JMP ]', '#3fb950');
+                    document.querySelector('.jump-zone').style.opacity = '0.6';
+                    if ("vibrate" in navigator) navigator.vibrate(15);
+                } else {
+                    player.shoot();
+                    createTouchFeedback(tx, ty, '[ EXE ]', '#f85149');
+                    document.querySelector('.shoot-zone').style.opacity = '0.6';
+                    if ("vibrate" in navigator) navigator.vibrate(5);
+                }
+            }
+        }
+        else if (e.type === 'touchmove') {
+            if (touch.identifier === leftTouchId) {
+                updateDpadState(tx, ty);
+            }
+        }
+        else if (e.type === 'touchend' || e.type === 'touchcancel') {
+            if (touch.identifier === leftTouchId) {
+                leftTouchId = null;
+                updateDpadState(null, null);
+            } else if (tx >= window.innerWidth / 2) {
+                document.querySelector('.jump-zone').style.opacity = '0.15';
+                document.querySelector('.shoot-zone').style.opacity = '0.15';
+            }
+        }
     }
 };
 
-window.addEventListener('touchstart', handleTouchStart, { passive: false });
-window.addEventListener('mousedown', handleTouchStart);
+window.addEventListener('touchstart', handleGlobalTouch, { passive: false });
+window.addEventListener('touchmove', handleGlobalTouch, { passive: false });
+window.addEventListener('touchend', handleGlobalTouch, { passive: false });
+window.addEventListener('touchcancel', handleGlobalTouch, { passive: false });
+
+// Mouse support for desktop testing (Simulate Left/Right halves)
+window.addEventListener('mousedown', (e) => {
+    // Ignore if clicking UI
+    if (e.target.closest('.icon-btn') || e.target.closest('.modal') || e.target.closest('.close-btn') || e.target.closest('input')) {
+        return;
+    }
+
+    initAudio();
+    const isLeft = e.clientX < window.innerWidth / 2;
+    if (isLeft) {
+        updateDpadState(e.clientX, e.clientY, true);
+        const mm = (me) => updateDpadState(me.clientX, me.clientY);
+        const mu = () => {
+            updateDpadState(null, null);
+            window.removeEventListener('mousemove', mm);
+            window.removeEventListener('mouseup', mu);
+        };
+        window.addEventListener('mousemove', mm);
+        window.addEventListener('mouseup', mu);
+    } else {
+        if (e.clientY > window.innerHeight * 0.4) player.jump();
+        else player.shoot();
+    }
+});
 
 window.addEventListener('keydown', e => {
     initAudio();
@@ -1408,7 +1556,7 @@ window.addEventListener('keydown', e => {
     // Jump Controls
     if (e.key === ' ' || e.key === 'w' || e.key === 'ArrowUp') {
         player.jump();
-        if (e.key === ' ') e.preventDefault(); // Prevent scrolling/clicking focused buttons
+        if (e.key === ' ') e.preventDefault();
     }
 
     // Shoot Controls
@@ -1440,9 +1588,26 @@ pauseBtn.addEventListener('click', () => {
 // Skin selection
 document.querySelectorAll('.color-opt').forEach(opt => {
     opt.addEventListener('click', () => {
+        const selectedColor = opt.dataset.color;
+
+        // Update UI
         document.querySelectorAll('.color-opt').forEach(o => o.classList.remove('active'));
         opt.classList.add('active');
-        player.color = opt.dataset.color;
+
+        // Update Player & Persist
+        if (player) {
+            player.color = selectedColor;
+            // Force Redraw if paused
+            if (isPaused) {
+                drawWorld();
+                platforms.forEach(p => p.draw());
+                player.draw();
+            }
+        }
+        localStorage.setItem('codeman_player_color', selectedColor);
+
+        // Feedback
+        if (typeof audioCtx !== 'undefined') playSound('collect');
     });
 });
 
@@ -1450,19 +1615,30 @@ document.querySelectorAll('.color-opt').forEach(opt => {
 // Audio Settings Controls
 const volSlider = document.getElementById('volume-slider');
 const muteBtn = document.getElementById('btn-mute');
+const musicSlider = document.getElementById('music-slider');
+const musicMuteBtn = document.getElementById('btn-music-mute');
+
+// Sync UI with stored values
+volSlider.value = currentVolume * 100;
+musicSlider.value = musicVolume * 100;
+if (isMuted) { muteBtn.classList.add('muted'); muteBtn.innerText = '🔇'; }
+if (isMusicMuted) { musicMuteBtn.classList.add('muted'); musicMuteBtn.innerText = '❌'; }
 
 volSlider.addEventListener('input', (e) => {
     currentVolume = e.target.value / 100;
     if (masterGainNode && !isMuted) masterGainNode.gain.value = currentVolume;
+    localStorage.setItem('codeman_vol', currentVolume);
     if (currentVolume > 0 && isMuted) {
         isMuted = false;
         muteBtn.classList.remove('muted');
         muteBtn.innerText = '🔊';
+        localStorage.setItem('codeman_muted', false);
     }
 });
 
 muteBtn.addEventListener('click', () => {
     isMuted = !isMuted;
+    localStorage.setItem('codeman_muted', isMuted);
     if (isMuted) {
         muteBtn.classList.add('muted');
         muteBtn.innerText = '🔇';
@@ -1471,6 +1647,33 @@ muteBtn.addEventListener('click', () => {
         muteBtn.classList.remove('muted');
         muteBtn.innerText = '🔊';
         if (masterGainNode) masterGainNode.gain.value = currentVolume;
+    }
+});
+
+musicSlider.addEventListener('input', (e) => {
+    musicVolume = e.target.value / 100;
+    if (bgmGainNode) bgmGainNode.gain.value = musicVolume;
+    localStorage.setItem('codeman_music_vol', musicVolume);
+    if (musicVolume > 0 && isMusicMuted) {
+        isMusicMuted = false;
+        musicMuteBtn.classList.remove('muted');
+        musicMuteBtn.innerText = '🎵';
+        localStorage.setItem('codeman_music_muted', false);
+        playBGM();
+    }
+});
+
+musicMuteBtn.addEventListener('click', () => {
+    isMusicMuted = !isMusicMuted;
+    localStorage.setItem('codeman_music_muted', isMusicMuted);
+    if (isMusicMuted) {
+        musicMuteBtn.classList.add('muted');
+        musicMuteBtn.innerText = '❌';
+        stopBGM();
+    } else {
+        musicMuteBtn.classList.remove('muted');
+        musicMuteBtn.innerText = '🎵';
+        playBGM();
     }
 });
 
@@ -1518,6 +1721,17 @@ settingsFixedBtn.addEventListener('click', () => {
     stopBGM();
 
     updateIsland('SİSTEM AYARLARI', 'important');
+
+    // Set active color in UI based on player's current color
+    const currentColor = (player && player.color) ? player.color : localStorage.getItem('codeman_player_color') || THEME.glowCyan;
+    document.querySelectorAll('.color-opt').forEach(opt => {
+        if (opt.dataset.color === currentColor) {
+            opt.classList.add('active');
+        } else {
+            opt.classList.remove('active');
+        }
+    });
+
     document.getElementById('customizer').classList.remove('hidden');
     overlay.classList.remove('hidden');
 });

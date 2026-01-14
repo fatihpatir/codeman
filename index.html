@@ -32,21 +32,41 @@
         <!-- Info Modal -->
         <div id="info-modal" class="hidden">
             <div class="modal">
-                <h2>BİLGİ & KÜNYE</h2>
-                <div class="info-content">
-                    <p>Geliştirici: <a href="https://fatihpatir.github.io/web/" target="_blank" class="dev-link">Fatih
-                            PATIR</a></p>
-                    <hr>
-                    <h3>NASIL OYNANIR?</h3>
-                    <ul class="instructions">
-                        <li>🎮 <strong>Hareket:</strong> Ok Tuşları (D-Pad)</li>
-                        <li>🚀 <strong>Zıpla:</strong> Sağ Buton veya Boşluk</li>
-                        <li>🔫 <strong>Ateş:</strong> Sol Buton veya F Tuşu</li>
-                    </ul>
-                    <hr>
-                    <p>Virüslerden kaç, kodları topla ve en yüksek skoru yap!</p>
+                <div class="modal-header">
+                    <h2>SİSTEM KÜNYESİ</h2>
+                    <div class="version-tag">v2.0.4 AI-CORE</div>
                 </div>
-                <button id="btn-close-info" class="close-btn">KAPAT</button>
+
+                <div class="info-content">
+                    <div class="dev-card">
+                        <div class="dev-avatar">
+                            <span class="avatar-text">FP</span>
+                            <div class="avatar-glow"></div>
+                        </div>
+                        <div class="dev-details">
+                            <span class="dev-role">CREATIVE DEVELOPER</span>
+                            <a href="https://fatihpatir.github.io/web/" target="_blank" class="dev-name-premium">Fatih
+                                PATIR</a>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <h3>KONTROLLER</h3>
+                        <ul class="control-list">
+                            <li><span class="key-icon">🎮</span> <span class="key-label">Hareket:</span> <span
+                                    class="key-value">D-Pad / Ok Tuşları</span></li>
+                            <li><span class="key-icon">🚀</span> <span class="key-label">Zıpla:</span> <span
+                                    class="key-value">Sağ Buton / Boşluk</span></li>
+                            <li><span class="key-icon">☄️</span> <span class="key-label">Ateş:</span> <span
+                                    class="key-value">Sol Buton / F Tuşu</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="info-footer">
+                        <p>Virüsleri temizle, sistemi kurtar.</p>
+                    </div>
+                </div>
+                <button id="btn-close-info" class="close-btn">SİSTEME DÖN</button>
             </div>
         </div>
 
@@ -54,10 +74,18 @@
             <h3>AYARLAR & KOSTÜM</h3>
 
             <div class="setting-group">
-                <label>SES SEVİYESİ</label>
+                <label>BİP SESLERİ</label>
                 <div class="volume-control">
                     <button id="btn-mute">🔊</button>
                     <input type="range" id="volume-slider" min="0" max="100" value="50">
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>OYUN MÜZİĞİ</label>
+                <div class="volume-control">
+                    <button id="btn-music-mute">🎵</button>
+                    <input type="range" id="music-slider" min="0" max="100" value="30">
                 </div>
             </div>
 
@@ -78,13 +106,11 @@
         <canvas id="gameCanvas"></canvas>
         <div id="controls">
             <div id="dpad-container">
-                <button id="dpad-up" class="dpad-btn">▲</button>
-                <div class="dpad-middle">
-                    <button id="dpad-left" class="dpad-btn">◄</button>
-                    <div class="dpad-center"></div>
-                    <button id="dpad-right" class="dpad-btn">►</button>
-                </div>
-                <button id="dpad-down" class="dpad-btn">▼</button>
+                <button id="dpad-up" class="dpad-btn" data-dir="up">▲</button>
+                <button id="dpad-left" class="dpad-btn" data-dir="left">◄</button>
+                <div class="dpad-center"></div>
+                <button id="dpad-right" class="dpad-btn" data-dir="right">►</button>
+                <button id="dpad-down" class="dpad-btn" data-dir="down">▼</button>
             </div>
 
             <div id="system-controls">
@@ -93,16 +119,17 @@
                 <button id="btn-settings-fixed" class="icon-btn">⚙️</button>
             </div>
 
-            <div id="action-buttons">
-                <button id="btn-shoot" class="control-btn action-btn">
-                    <span class="btn-icon">☄️</span>
-                    <span class="btn-text">ATEŞ</span>
-                </button>
-                <button id="btn-jump" class="control-btn">
-                    <span class="btn-icon">⚡</span>
-                    <span class="btn-text">ZIPLA</span>
-                </button>
+            <!-- Dynamic Action HUB: Ghost Guides -->
+            <div id="action-hud-ghost">
+                <div class="ghost-zone shoot-zone">
+                    <span class="ghost-label">[ EXE ]</span>
+                </div>
+                <div class="ghost-divider"></div>
+                <div class="ghost-zone jump-zone">
+                    <span class="ghost-label">[ JMP ]</span>
+                </div>
             </div>
+            <div id="action-guide" class="hidden"></div>
         </div>
 
         <!-- PWA Onboarding Splash -->
