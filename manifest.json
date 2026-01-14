@@ -2,11 +2,11 @@
     "name": "Codeman Parkur",
     "short_name": "Codeman",
     "description": "Premium coding themed parkour game.",
-    "start_url": "./",
+    "start_url": "index.html",
     "display": "standalone",
     "background_color": "#0d1117",
     "theme_color": "#58a6ff",
-    "orientation": "landscape",
+    "orientation": "portrait",
     "icons": [
         {
             "src": "icon-512.png",
