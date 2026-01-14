@@ -15,11 +15,7 @@
 
 <body>
     <div id="game-container">
-        <div id="dynamic-island-container">
-            <div id="dynamic-island">
-                <span id="island-text"></span>
-            </div>
-        </div>
+
         <div id="ui-layer">
             <div id="header">
                 <div id="lives-container">❤️❤️❤️</div>
@@ -43,7 +39,7 @@
                     <hr>
                     <h3>NASIL OYNANIR?</h3>
                     <ul class="instructions">
-                        <li>🕹️ <strong>Hareket:</strong> Joystick veya Ok Tuşları</li>
+                        <li>🎮 <strong>Hareket:</strong> Ok Tuşları (D-Pad)</li>
                         <li>🚀 <strong>Zıpla:</strong> Sağ Buton veya Boşluk</li>
                         <li>🔫 <strong>Ateş:</strong> Sol Buton veya F Tuşu</li>
                     </ul>
@@ -81,10 +77,14 @@
 
         <canvas id="gameCanvas"></canvas>
         <div id="controls">
-            <div id="joystick-container">
-                <div id="joystick-base">
-                    <div id="joystick-stick"></div>
+            <div id="dpad-container">
+                <button id="dpad-up" class="dpad-btn">▲</button>
+                <div class="dpad-middle">
+                    <button id="dpad-left" class="dpad-btn">◄</button>
+                    <div class="dpad-center"></div>
+                    <button id="dpad-right" class="dpad-btn">►</button>
                 </div>
+                <button id="dpad-down" class="dpad-btn">▼</button>
             </div>
 
             <div id="system-controls">

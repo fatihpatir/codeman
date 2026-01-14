@@ -6,8 +6,11 @@ const finalScoreElement = document.getElementById('final-score');
 const overlay = document.getElementById('overlay');
 const restartBtn = document.getElementById('btn-restart');
 
-const joystickBase = document.getElementById('joystick-base');
-const joystickStick = document.getElementById('joystick-stick');
+// D-Pad Buttons
+const dpadUp = document.getElementById('dpad-up');
+const dpadDown = document.getElementById('dpad-down');
+const dpadLeft = document.getElementById('dpad-left');
+const dpadRight = document.getElementById('dpad-right');
 const shootBtn = document.getElementById('btn-shoot');
 const jumpBtn = document.getElementById('btn-jump');
 
@@ -57,10 +60,7 @@ const RANKS = [
 ];
 
 // --- INPUT HANDLING STATE ---
-let joystickActive = false;
-let joystickX = 0;
-let joystickY = 0;
-let joystickCenter = { x: 0, y: 0 };
+const dpadState = { up: false, down: false, left: false, right: false };
 const keys = {};
 
 // --- BACKGROUND IMAGE LOADING ---
@@ -120,7 +120,7 @@ function resize() {
             isPaused = true;
             pausedByOrientation = true;
             document.getElementById('btn-pause').innerText = '▶';
-            updateIsland('LÜTFEN CİHAZI ÇEVİRİN');
+
         }
     } else {
         warning.classList.add('hidden');
@@ -129,7 +129,7 @@ function resize() {
             isPaused = false;
             pausedByOrientation = false;
             document.getElementById('btn-pause').innerText = '⏸';
-            updateIsland('SİSTEM HAZIR!');
+
             lastTimestamp = 0;
             requestAnimationFrame(gameLoop);
         }
@@ -347,20 +347,15 @@ class Player {
         if (this.invulnerable > 0) this.invulnerable--;
         if (this.shootCooldown > 0) this.shootCooldown--;
 
-        // Analog movement input
+        // Digital movement input (keyboard + D-Pad)
         let moveX = 0;
         let moveY = 0;
 
-        if (keys['ArrowRight'] || keys['d']) moveX = 1;
-        else if (keys['ArrowLeft'] || keys['a']) moveX = -1;
+        if (keys['ArrowRight'] || keys['d'] || dpadState.right) moveX = 1;
+        else if (keys['ArrowLeft'] || keys['a'] || dpadState.left) moveX = -1;
 
-        if (keys['ArrowDown'] || keys['s']) moveY = 1;
-        else if (keys['ArrowUp'] || keys['w']) moveY = -1;
-
-        if (joystickActive) {
-            moveX = joystickX;
-            moveY = joystickY;
-        }
+        if (keys['ArrowDown'] || keys['s'] || dpadState.down) moveY = 1;
+        else if (keys['ArrowUp'] || keys['w'] || dpadState.up) moveY = -1;
 
         // Horizontal Movement logic
         if (Math.abs(moveX) > 0.1) {
@@ -1358,46 +1353,41 @@ function gameOver() { isGameOver = true; playSound('hit'); overlay.classList.rem
 
 // --- INPUT HANDLING ---
 
-const updateJoystick = (e) => {
-    if (!joystickActive) return;
+// D-Pad button event handlers
+const setupDpadButton = (button, direction) => {
+    if (!button) return;
 
-    const touch = e.touches ? e.touches[0] : e;
+    const activate = (e) => {
+        dpadState[direction] = true;
+        initAudio();
+        if (e.cancelable) e.preventDefault();
+    };
 
-    let diffX = touch.clientX - joystickCenter.x;
-    let diffY = touch.clientY - joystickCenter.y;
+    const deactivate = (e) => {
+        dpadState[direction] = false;
+        if (e.cancelable) e.preventDefault();
+    };
 
-    const dist = Math.sqrt(diffX * diffX + diffY * diffY);
-    const maxDist = 60; // Updated for 120px base (120/2)
+    // Touch events
+    button.addEventListener('touchstart', activate, { passive: false });
+    button.addEventListener('touchend', deactivate, { passive: false });
+    button.addEventListener('touchcancel', deactivate, { passive: false });
 
-    if (dist > maxDist) {
-        diffX *= maxDist / dist;
-        diffY *= maxDist / dist;
-    }
-
-    // Visual stick movement
-    joystickStick.style.transform = `translate(calc(-50% + ${diffX}px), calc(-50% + ${diffY}px))`;
-
-    // Analog values
-    joystickX = diffX / maxDist;
-    joystickY = diffY / maxDist;
-
-    if (e.cancelable) e.preventDefault();
+    // Mouse events (for desktop testing)
+    button.addEventListener('mousedown', activate);
+    button.addEventListener('mouseup', deactivate);
+    button.addEventListener('mouseleave', deactivate);
 };
 
-const startJoystick = (e) => {
-    const touch = e.touches ? e.touches[0] : e;
-    const rect = joystickBase.getBoundingClientRect();
+// Setup all D-Pad buttons
+setupDpadButton(dpadUp, 'up');
+setupDpadButton(dpadDown, 'down');
+setupDpadButton(dpadLeft, 'left');
+setupDpadButton(dpadRight, 'right');
 
-    if (e.target === joystickBase || joystickBase.contains(e.target)) {
-        joystickActive = true;
-        joystickCenter = {
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2
-        };
-        updateJoystick(e);
-        if (e.cancelable) e.preventDefault();
-    }
-
+// Action buttons (Jump & Shoot)
+const handleTouchStart = (e) => {
+    initAudio();
     if (e.target === jumpBtn || jumpBtn.contains(e.target)) {
         player.jump();
         if (e.cancelable) e.preventDefault();
@@ -1406,23 +1396,10 @@ const startJoystick = (e) => {
         player.shoot();
         if (e.cancelable) e.preventDefault();
     }
-    initAudio();
 };
 
-const stopJoystick = () => {
-    joystickActive = false;
-    joystickX = 0;
-    joystickY = 0;
-    joystickStick.style.transform = `translate(-50%, -50%)`;
-};
-
-window.addEventListener('touchstart', startJoystick, { passive: false });
-window.addEventListener('touchmove', updateJoystick, { passive: false });
-window.addEventListener('touchend', stopJoystick);
-
-window.addEventListener('mousedown', startJoystick);
-window.addEventListener('mousemove', updateJoystick);
-window.addEventListener('mouseup', stopJoystick);
+window.addEventListener('touchstart', handleTouchStart, { passive: false });
+window.addEventListener('mousedown', handleTouchStart);
 
 window.addEventListener('keydown', e => {
     initAudio();
