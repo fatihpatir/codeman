@@ -1293,45 +1293,65 @@ const playBGM = () => {
     let step = 0;
     const playSynth = (freq, startTime, type, vol, decay) => {
         if (!isBGMPlaying) return;
-        const osc = audioCtx.createOscillator();
-        const g = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, startTime);
-        g.gain.setValueAtTime(vol, startTime);
-        g.gain.exponentialRampToValueAtTime(0.001, startTime + decay);
-        osc.connect(g);
-        g.connect(bgmGainNode);
-        osc.start(startTime);
-        osc.stop(startTime + decay);
+        try {
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startTime);
+            g.gain.setValueAtTime(vol, startTime);
+            g.gain.exponentialRampToValueAtTime(0.001, startTime + decay);
+            osc.connect(g);
+            g.connect(bgmGainNode);
+            osc.start(startTime);
+            osc.stop(startTime + decay);
+        } catch (e) {
+            console.error("Audio error:", e);
+        }
     };
 
     let nextNoteTime = audioCtx.currentTime;
+    isBGMPlaying = true;
+
     const sequence = () => {
         if (!isBGMPlaying || isMusicMuted) return;
 
-        // Lead Melody (Square Wave)
-        const freq = melody[step % melody.length];
-        if (freq > 0) {
-            playSynth(freq, nextNoteTime, 'square', 0.04, 0.2);
-        }
+        try {
+            // Lead Melody (Square Wave)
+            const freq = melody[step % melody.length];
+            if (freq > 0) {
+                playSynth(freq, nextNoteTime, 'square', 0.04, 0.2);
+            }
 
-        // Deep Bass (Triangle Wave every 2 steps)
-        if (step % 2 === 0) {
-            const bFreq = bassline[(step / 2) % bassline.length];
-            playSynth(bFreq, nextNoteTime, 'triangle', 0.12, 0.35);
-        }
+            // Deep Bass (Triangle Wave every 2 steps)
+            if (step % 2 === 0) {
+                const bIdx = Math.floor(step / 2) % bassline.length;
+                const bFreq = bassline[bIdx];
+                playSynth(bFreq, nextNoteTime, 'triangle', 0.12, 0.35);
+            }
 
-        // Cyber Snare (White Noise-ish)
-        if (step % 8 === 4) {
-            playSynth(80, nextNoteTime, 'sawtooth', 0.03, 0.08);
-        }
+            // Cyber Snare (White Noise-ish)
+            if (step % 8 === 4) {
+                playSynth(80, nextNoteTime, 'sawtooth', 0.03, 0.08);
+            }
 
-        step++;
-        nextNoteTime += 0.15;
-        setTimeout(sequence, 150);
+            step++;
+            nextNoteTime += 0.15;
+
+            // Scheduling catch-up logic
+            let delay = (nextNoteTime - audioCtx.currentTime) * 1000;
+            if (delay < 10) delay = 10; // Minimum delay
+
+            // If fell too far behind, reset
+            if (nextNoteTime < audioCtx.currentTime - 0.2) {
+                nextNoteTime = audioCtx.currentTime + 0.1;
+            }
+
+            setTimeout(sequence, 150);
+        } catch (e) {
+            setTimeout(sequence, 150);
+        }
     };
 
-    isBGMPlaying = true;
     sequence();
 };
 
@@ -1467,6 +1487,12 @@ const createTouchFeedback = (x, y, label, color) => {
 };
 
 const handleGlobalTouch = (e) => {
+    const target = e.target;
+    // CRITICAL FIX: Allow default behavior for UI elements (Buttons, Inputs, Modals)
+    if (target.closest('button') || target.closest('.modal') || target.closest('input') || target.closest('.icon-btn') || target.closest('.close-btn')) {
+        return;
+    }
+
     initAudio();
     if (e.cancelable) e.preventDefault();
     const touches = e.changedTouches;
@@ -1478,12 +1504,6 @@ const handleGlobalTouch = (e) => {
         const isLeftHalf = tx < window.innerWidth / 2;
 
         if (e.type === 'touchstart') {
-            // IGNORE UI Elements (Buttons, Modals, Sliders)
-            const target = touch.target || e.target;
-            if (target.closest('.icon-btn') || target.closest('.modal') || target.closest('.close-btn') || target.closest('input')) {
-                continue;
-            }
-
             if (isLeftHalf && leftTouchId === null) {
                 leftTouchId = touch.identifier;
                 updateDpadState(tx, ty, true);

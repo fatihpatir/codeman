@@ -779,3 +779,66 @@ body {
     font-style: italic;
     opacity: 0.8;
 }
+
+/* Game Over Menu Styling */
+.menu-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 25px;
+    width: 100%;
+}
+
+#btn-restart {
+    background: linear-gradient(135deg, var(--terminal-green), #2ea043);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 16px 20px;
+    font-family: 'Fira Code', monospace;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(46, 160, 67, 0.4);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#btn-restart:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 8px rgba(46, 160, 67, 0.3);
+    filter: brightness(1.1);
+}
+
+/* Mobile Modal Optimizations */
+@media (max-width: 600px) {
+    .modal {
+        width: 90%;
+        max-width: 400px;
+        padding: 30px 25px;
+        border: 1px solid rgba(88, 166, 255, 0.4);
+        border-radius: 20px;
+    }
+
+    .modal h1.glitch {
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+    }
+
+    .menu-btns {
+        margin-top: 20px;
+    }
+
+    #btn-restart {
+        font-size: 1rem;
+        padding: 14px;
+    }
+
+    /* Ensure close button is easily tappable */
+    .close-btn {
+        padding: 14px;
+        font-size: 1rem;
+    }
+}
